@@ -28,6 +28,30 @@ def test_invalid_login_rejected(client, admin_user):
     assert response.json()["error"]["code"] == "INVALID_CREDENTIALS"
 
 
+def test_login_ip_rate_limit_blocks_email_rotation(client, admin_user):
+    import app.services.auth as auth_module
+
+    original_attempts = auth_module.login_ip_rate_limiter.max_attempts
+    original_window = auth_module.login_ip_rate_limiter.window_seconds
+    auth_module.login_ip_rate_limiter.max_attempts = 2
+    auth_module.login_ip_rate_limiter.window_seconds = 300
+    auth_module.login_ip_rate_limiter.reset()
+    try:
+        first = login(client, "missing1@example.com", "WrongPass123!")
+        assert first.status_code == 401
+
+        second = login(client, "missing2@example.com", "WrongPass123!")
+        assert second.status_code == 401
+
+        third = login(client, "missing3@example.com", "WrongPass123!")
+        assert third.status_code == 429
+        assert third.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+    finally:
+        auth_module.login_ip_rate_limiter.max_attempts = original_attempts
+        auth_module.login_ip_rate_limiter.window_seconds = original_window
+        auth_module.login_ip_rate_limiter.reset()
+
+
 def test_first_login_password_change_invalidates_old_token(client, admin_user):
     admin_login = login(client, "admin@example.com", "AdminPass123!")
     admin_token = admin_login.json()["access_token"]
@@ -84,4 +108,3 @@ def create_department(client, headers) -> int:
     )
     assert response.status_code == 201
     return response.json()["id"]
-

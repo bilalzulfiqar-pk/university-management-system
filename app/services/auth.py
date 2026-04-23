@@ -19,6 +19,12 @@ login_rate_limiter = FixedWindowRateLimiter(
     error_message="Too many login attempts. Please try again later.",
 )
 
+login_ip_rate_limiter = FixedWindowRateLimiter(
+    max_attempts=settings.login_ip_rate_limit_attempts,
+    window_seconds=settings.login_ip_rate_limit_window_seconds,
+    error_message="Too many login attempts from this IP. Please try again later.",
+)
+
 change_password_rate_limiter = FixedWindowRateLimiter(
     max_attempts=settings.change_password_rate_limit_attempts,
     window_seconds=settings.change_password_rate_limit_window_seconds,
@@ -26,9 +32,12 @@ change_password_rate_limiter = FixedWindowRateLimiter(
 )
 
 
+def get_client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 def get_client_key(request: Request, email: str) -> str:
-    client_ip = request.client.host if request.client else "unknown"
-    return f"{client_ip}:{email.lower()}"
+    return f"{get_client_ip(request)}:{email.lower()}"
 
 
 class AuthService:
@@ -37,6 +46,8 @@ class AuthService:
 
     def login(self, request: Request, payload: LoginRequest) -> TokenResponse:
         rate_limit_key = get_client_key(request, payload.email)
+        client_ip_key = get_client_ip(request)
+        login_ip_rate_limiter.check(client_ip_key)
         login_rate_limiter.check(rate_limit_key)
 
         stmt = (
@@ -51,6 +62,7 @@ class AuthService:
             raise UnauthorizedError(code="INVALID_CREDENTIALS", message="Invalid email or password.")
 
         login_rate_limiter.clear(rate_limit_key)
+        login_ip_rate_limiter.clear(client_ip_key)
         user.last_login_at = utcnow()
         commit_or_rollback(self.db)
 

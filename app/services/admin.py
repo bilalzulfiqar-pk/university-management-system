@@ -731,9 +731,16 @@ class OfferingAdminService:
         assignment = CourseOfferingTeacher(offering_id=offering.id, teacher_id=teacher.id)
         self.db.add(assignment)
         commit_or_rollback(self.db)
-        return {"success": True, "message": "Teacher assigned successfully."}
+        return {
+            "success": True,
+            "message": "Teacher assigned successfully.",
+            "offering_label": f"{offering.course.code} {offering.term} {offering.year} section {offering.section}",
+            "teacher_label": f"{teacher.first_name} {teacher.last_name} ({teacher.employee_id})",
+        }
 
     def unassign_teacher(self, offering_id: int, teacher_id: int) -> dict[str, bool | str]:
+        offering = self._get_offering(offering_id)
+        teacher = self._get_teacher(teacher_id)
         assignment = self.db.scalar(
             select(CourseOfferingTeacher).where(
                 CourseOfferingTeacher.offering_id == offering_id,
@@ -744,7 +751,12 @@ class OfferingAdminService:
             raise NotFoundError(code="ASSIGNMENT_NOT_FOUND", message="Teacher assignment not found.")
         self.db.delete(assignment)
         commit_or_rollback(self.db)
-        return {"success": True, "message": "Teacher unassigned successfully."}
+        return {
+            "success": True,
+            "message": "Teacher unassigned successfully.",
+            "offering_label": f"{offering.course.code} {offering.term} {offering.year} section {offering.section}",
+            "teacher_label": f"{teacher.first_name} {teacher.last_name} ({teacher.employee_id})",
+        }
 
     def enroll_student(self, offering_id: int, student_id: int) -> dict[str, bool | str]:
         offering = self._get_offering(offering_id)
@@ -760,9 +772,16 @@ class OfferingAdminService:
         enrollment = Enrollment(offering_id=offering.id, student_id=student.id)
         self.db.add(enrollment)
         commit_or_rollback(self.db)
-        return {"success": True, "message": "Student enrolled successfully."}
+        return {
+            "success": True,
+            "message": "Student enrolled successfully.",
+            "offering_label": f"{offering.course.code} {offering.term} {offering.year} section {offering.section}",
+            "student_label": f"{student.first_name} {student.last_name} ({student.roll_number})",
+        }
 
     def unenroll_student(self, offering_id: int, student_id: int) -> dict[str, bool | str]:
+        offering = self._get_offering(offering_id)
+        student = self._get_student(student_id)
         enrollment = self.db.scalar(
             select(Enrollment).where(Enrollment.offering_id == offering_id, Enrollment.student_id == student_id)
         )
@@ -770,7 +789,12 @@ class OfferingAdminService:
             raise NotFoundError(code="ENROLLMENT_NOT_FOUND", message="Enrollment not found.")
         self.db.delete(enrollment)
         commit_or_rollback(self.db)
-        return {"success": True, "message": "Student unenrolled successfully."}
+        return {
+            "success": True,
+            "message": "Student unenrolled successfully.",
+            "offering_label": f"{offering.course.code} {offering.term} {offering.year} section {offering.section}",
+            "student_label": f"{student.first_name} {student.last_name} ({student.roll_number})",
+        }
 
     def _get_offering(self, offering_id: int, *, include_deleted: bool = False) -> CourseOffering:
         stmt = (
@@ -842,4 +866,3 @@ class OfferingAdminService:
         if student is None:
             raise BadRequestError(code="INVALID_STUDENT", message="Student does not exist.")
         return student
-

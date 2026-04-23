@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.audit import AuditContext
 from app.core.error_handlers import build_error_response
 from app.core.exceptions import TooManyRequestsError
 from app.core.security import try_decode_access_token
@@ -46,11 +47,26 @@ def _record_admin_audit_log(request: Request, status_code: int) -> None:
     if request.method not in {"POST", "PATCH", "DELETE"}:
         return
 
+    audit_context: AuditContext | None = getattr(request.state, "audit_context", None)
+    if audit_context is None:
+        audit_context = AuditContext(
+            action=request.method,
+            entity_type="unknown",
+            entity_id=None,
+            entity_label=None,
+            description=f"Admin performed {request.method} on {request.url.path}.",
+        )
+
     db = SessionLocal()
     try:
         entry = AdminAuditLog(
             actor_user_id=getattr(request.state, "user_id", None),
             actor_role=getattr(request.state, "user_role", None),
+            action=audit_context.action,
+            entity_type=audit_context.entity_type,
+            entity_id=audit_context.entity_id,
+            entity_label=audit_context.entity_label,
+            description=audit_context.description,
             method=request.method,
             path=request.url.path,
             status_code=status_code,

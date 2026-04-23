@@ -37,6 +37,7 @@ def db_session() -> Session:
 @pytest.fixture()
 def client(db_session: Session):
     auth_module.login_rate_limiter.reset()
+    auth_module.login_ip_rate_limiter.reset()
     auth_module.change_password_rate_limiter.reset()
     middleware_module.read_rate_limiter.reset()
     middleware_module.write_rate_limiter.reset()

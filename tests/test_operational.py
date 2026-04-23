@@ -34,6 +34,17 @@ def test_admin_audit_logs_capture_admin_mutations(client, admin_user):
     assert body["items"][0]["method"] == "POST"
     assert body["items"][0]["path"] == "/api/v1/admin/departments"
     assert body["items"][0]["actor_user_id"] is not None
+    assert body["items"][0]["action"] == "CREATE_DEPARTMENT"
+    assert body["items"][0]["entity_type"] == "department"
+    assert body["items"][0]["entity_label"] == "Audit Department (ADT)"
+    assert body["items"][0]["description"] == "Admin created department Audit Department (ADT)."
+
+    filtered = client.get(
+        "/api/v1/admin/audit-logs?action=CREATE_DEPARTMENT&entity_type=department",
+        headers=headers,
+    )
+    assert filtered.status_code == 200
+    assert filtered.json()["total"] >= 1
 
 
 def test_change_password_rate_limit_blocks_abuse(client, admin_user):
