@@ -16,6 +16,13 @@ from app.services.serializers import serialize_auth_user
 login_rate_limiter = FixedWindowRateLimiter(
     max_attempts=settings.login_rate_limit_attempts,
     window_seconds=settings.login_rate_limit_window_seconds,
+    error_message="Too many login attempts. Please try again later.",
+)
+
+change_password_rate_limiter = FixedWindowRateLimiter(
+    max_attempts=settings.change_password_rate_limit_attempts,
+    window_seconds=settings.change_password_rate_limit_window_seconds,
+    error_message="Too many password change attempts. Please try again later.",
 )
 
 
@@ -63,6 +70,7 @@ class AuthService:
         return {"success": True, "message": "Logged out successfully."}
 
     def change_password(self, user: User, payload: ChangePasswordRequest) -> dict[str, bool | str]:
+        change_password_rate_limiter.check(f"user:{user.id}")
         if not verify_password(payload.current_password, user.password_hash):
             raise BadRequestError(code="INVALID_PASSWORD", message="Current password is incorrect.")
 
@@ -76,6 +84,7 @@ class AuthService:
         user.must_change_password = False
         user.token_version += 1
         commit_or_rollback(self.db)
+        change_password_rate_limiter.clear(f"user:{user.id}")
         return {"success": True, "message": "Password changed successfully."}
 
     def me(self, user: User) -> AuthMeResponse:
@@ -104,4 +113,3 @@ def create_admin_user(
     db.add(user)
     commit_or_rollback(db)
     return user
-

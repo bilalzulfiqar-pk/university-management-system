@@ -50,6 +50,7 @@ def get_current_user(
         raise UnauthorizedError(code="INVALID_TOKEN", message="Authentication failed.")
 
     request.state.user_id = user.id
+    request.state.user_role = user.role
     if user.must_change_password and request.url.path not in ALLOWED_PASSWORD_CHANGE_PATHS:
         raise ForbiddenError(
             code="PASSWORD_CHANGE_REQUIRED",
@@ -75,4 +76,3 @@ def require_role(*roles: UserRole) -> Callable[[CurrentUser], User]:
 AdminUser = Annotated[User, Depends(require_role(UserRole.ADMIN))]
 TeacherUser = Annotated[User, Depends(require_role(UserRole.TEACHER))]
 StudentUser = Annotated[User, Depends(require_role(UserRole.STUDENT))]
-

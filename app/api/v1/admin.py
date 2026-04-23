@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, status
 from app.api.deps import SessionDep, require_role
 from app.core.constants import AcademicTerm, UserRole
 from app.schemas.common import MessageResponse, Page
+from app.schemas.audit_log import AdminAuditLogRead
 from app.schemas.course import CourseCreate, CourseRead, CourseUpdate
 from app.schemas.department import DepartmentCreate, DepartmentRead, DepartmentUpdate
 from app.schemas.offering import CourseOfferingCreate, CourseOfferingRead, CourseOfferingUpdate
@@ -15,6 +16,7 @@ from app.services.admin import (
     StudentAdminService,
     TeacherAdminService,
 )
+from app.services.audit_log import AuditLogService
 
 
 router = APIRouter(dependencies=[Depends(require_role(UserRole.ADMIN))])
@@ -31,6 +33,22 @@ def list_departments(
     return DepartmentAdminService(db).list(
         search=search,
         include_deleted=include_deleted,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get("/audit-logs", response_model=Page[AdminAuditLogRead])
+def list_audit_logs(
+    db: SessionDep,
+    actor_user_id: int | None = None,
+    method: str | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> Page[AdminAuditLogRead]:
+    return AuditLogService(db).list(
+        actor_user_id=actor_user_id,
+        method=method,
         limit=limit,
         offset=offset,
     )

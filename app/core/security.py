@@ -41,3 +41,9 @@ def decode_access_token(token: str) -> dict:
     except jwt.PyJWTError as exc:
         raise UnauthorizedError(code="INVALID_TOKEN", message="Authentication failed.") from exc
 
+
+def try_decode_access_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None

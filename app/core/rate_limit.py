@@ -7,9 +7,18 @@ from app.core.exceptions import TooManyRequestsError
 
 
 class FixedWindowRateLimiter:
-    def __init__(self, *, max_attempts: int, window_seconds: int) -> None:
+    def __init__(
+        self,
+        *,
+        max_attempts: int,
+        window_seconds: int,
+        error_code: str = "RATE_LIMIT_EXCEEDED",
+        error_message: str = "Too many requests. Please try again later.",
+    ) -> None:
         self.max_attempts = max_attempts
         self.window_seconds = window_seconds
+        self.error_code = error_code
+        self.error_message = error_message
         self._events: dict[Hashable, deque[datetime]] = defaultdict(deque)
         self._lock = Lock()
 
@@ -23,8 +32,8 @@ class FixedWindowRateLimiter:
                 attempts.popleft()
             if len(attempts) >= self.max_attempts:
                 raise TooManyRequestsError(
-                    code="RATE_LIMIT_EXCEEDED",
-                    message="Too many login attempts. Please try again later.",
+                    code=self.error_code,
+                    message=self.error_message,
                 )
             attempts.append(now)
 
@@ -32,3 +41,6 @@ class FixedWindowRateLimiter:
         with self._lock:
             self._events.pop(key, None)
 
+    def reset(self) -> None:
+        with self._lock:
+            self._events.clear()

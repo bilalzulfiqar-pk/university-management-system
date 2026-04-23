@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=list)
     login_rate_limit_attempts: int = 5
     login_rate_limit_window_seconds: int = 60
+    api_read_rate_limit_attempts: int = 300
+    api_read_rate_limit_window_seconds: int = 60
+    api_write_rate_limit_attempts: int = 60
+    api_write_rate_limit_window_seconds: int = 60
+    change_password_rate_limit_attempts: int = 5
+    change_password_rate_limit_window_seconds: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",

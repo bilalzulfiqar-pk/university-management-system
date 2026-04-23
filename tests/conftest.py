@@ -4,10 +4,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core import middleware as middleware_module
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
-from app.services.auth import create_admin_user, login_rate_limiter
+from app.services import auth as auth_module
+from app.services.auth import create_admin_user
 
 
 TEST_DATABASE_URL = "sqlite://"
@@ -34,7 +36,11 @@ def db_session() -> Session:
 
 @pytest.fixture()
 def client(db_session: Session):
-    login_rate_limiter._events.clear()
+    auth_module.login_rate_limiter.reset()
+    auth_module.change_password_rate_limiter.reset()
+    middleware_module.read_rate_limiter.reset()
+    middleware_module.write_rate_limiter.reset()
+    middleware_module.SessionLocal = TestingSessionLocal
 
     def override_get_db():
         try:
@@ -51,4 +57,3 @@ def client(db_session: Session):
 @pytest.fixture()
 def admin_user(db_session: Session):
     return create_admin_user(db=db_session, email="admin@example.com", password="AdminPass123!")
-
