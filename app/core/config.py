@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-to-a-long-random-secret-key-at-least-32-chars"
     access_token_expire_minutes: int = 30
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/university_management"
-    admin_email: str = "admin@university.local"
+    admin_email: str = "admin@example.com"
     admin_password: str = "ChangeMe123!"
     log_level: str = "INFO"
     cors_origins: list[str] = Field(default_factory=list)
