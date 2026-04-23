@@ -1,4 +1,5 @@
 from app.core.config import settings
+from app.db.base import Base  # noqa: F401
 from app.db.session import SessionLocal
 from app.services.auth import create_admin_user
 
@@ -14,4 +15,3 @@ def main() -> None:
         print(f"Admin user ready: {user.email}")
     finally:
         db.close()
-
