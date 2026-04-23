@@ -162,6 +162,9 @@ def test_admin_teacher_student_workflow_and_role_boundaries(client, admin_user):
     assert my_offerings.status_code == 200
     assert my_offerings.json()["items"][0]["course_code"] == "CS301"
 
+    teacher_student_route = client.get("/api/v1/me/student", headers=teacher_headers)
+    assert teacher_student_route.status_code == 403
+
 
 def test_student_soft_delete_restore_and_hard_delete_rules(client, admin_user, db_session):
     admin_token = login(client, "admin@example.com", "AdminPass123!")
@@ -277,3 +280,77 @@ def test_include_deleted_and_uniqueness_constraints(client, admin_user):
         headers=admin_headers,
     )
     assert enroll_twice.status_code == 409
+
+
+def test_inactive_teacher_cannot_login(client, admin_user):
+    admin_token = login(client, "admin@example.com", "AdminPass123!")
+    admin_headers = auth_headers(admin_token)
+    department_id = create_department(client, admin_headers, name="Arts", code="ART")
+
+    response = client.post(
+        "/api/v1/admin/teachers",
+        headers=admin_headers,
+        json={
+            "email": "inactive.teacher@example.com",
+            "temporary_password": "TeachPass123!",
+            "first_name": "Inactive",
+            "last_name": "Teacher",
+            "employee_id": "EMP-999",
+            "department_id": department_id,
+            "is_active": False,
+        },
+    )
+    assert response.status_code == 201
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "inactive.teacher@example.com", "password": "TeachPass123!"},
+    )
+    assert login_response.status_code == 401
+
+
+def test_invalid_term_and_semester_validation_fail(client, admin_user):
+    admin_token = login(client, "admin@example.com", "AdminPass123!")
+    admin_headers = auth_headers(admin_token)
+    department_id = create_department(client, admin_headers, name="Validation", code="VAL")
+    course_id = create_course(client, admin_headers, department_id)
+
+    invalid_offering = client.post(
+        "/api/v1/admin/course-offerings",
+        headers=admin_headers,
+        json={
+            "course_id": course_id,
+            "term": "WINTER",
+            "year": 2026,
+            "section": "A",
+            "capacity": 30,
+        },
+    )
+    assert invalid_offering.status_code == 422
+
+    invalid_student = client.post(
+        "/api/v1/admin/students",
+        headers=admin_headers,
+        json={
+            "email": "invalid.student@example.com",
+            "temporary_password": "StudPass123!",
+            "first_name": "Bad",
+            "last_name": "Semester",
+            "roll_number": "ST-888",
+            "department_id": department_id,
+            "current_semester": 20,
+            "is_active": True,
+        },
+    )
+    assert invalid_student.status_code == 422
+
+
+def test_department_delete_blocked_when_active_relations_exist(client, admin_user):
+    admin_token = login(client, "admin@example.com", "AdminPass123!")
+    admin_headers = auth_headers(admin_token)
+    department_id = create_department(client, admin_headers, name="Protected", code="PRT")
+
+    create_student(client, admin_headers, department_id)
+
+    delete_response = client.delete(f"/api/v1/admin/departments/{department_id}", headers=admin_headers)
+    assert delete_response.status_code == 409

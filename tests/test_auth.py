@@ -28,6 +28,12 @@ def test_invalid_login_rejected(client, admin_user):
     assert response.json()["error"]["code"] == "INVALID_CREDENTIALS"
 
 
+def test_unauthenticated_request_is_blocked(client):
+    response = client.get("/api/v1/auth/me")
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "AUTH_REQUIRED"
+
+
 def test_login_ip_rate_limit_blocks_email_rotation(client, admin_user):
     import app.services.auth as auth_module
 
@@ -98,6 +104,19 @@ def test_first_login_password_change_invalidates_old_token(client, admin_user):
     student_profile = client.get("/api/v1/me/student", headers=new_headers)
     assert student_profile.status_code == 200
     assert student_profile.json()["email"] == "student1@example.com"
+
+
+def test_logout_invalidates_current_token(client, admin_user):
+    response = login(client, "admin@example.com", "AdminPass123!")
+    token = response.json()["access_token"]
+    headers = auth_headers(token)
+
+    logout_response = client.post("/api/v1/auth/logout", headers=headers)
+    assert logout_response.status_code == 200
+
+    me_response = client.get("/api/v1/auth/me", headers=headers)
+    assert me_response.status_code == 401
+    assert me_response.json()["error"]["code"] == "INVALID_TOKEN"
 
 
 def create_department(client, headers) -> int:

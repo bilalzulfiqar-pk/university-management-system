@@ -21,6 +21,20 @@ class TeacherCreate(BaseModel):
     department_id: int = Field(gt=0)
     is_active: bool = True
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "email": "teacher1@example.com",
+                "temporary_password": "Teacher123!",
+                "first_name": "Sara",
+                "last_name": "Khan",
+                "employee_id": "EMP-001",
+                "department_id": 1,
+                "is_active": True,
+            }
+        }
+    }
+
     @field_validator("temporary_password")
     @classmethod
     def validate_password(cls, value: str) -> str:
@@ -45,6 +59,16 @@ class TeacherUpdate(BaseModel):
     employee_id: Annotated[str, IdentifierStr] | None = None
     department_id: int | None = Field(default=None, gt=0)
     is_active: bool | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "last_name": "Ahmed",
+                "department_id": 2,
+                "is_active": True,
+            }
+        }
+    }
 
     @field_validator("temporary_password")
     @classmethod
@@ -77,4 +101,3 @@ class TeacherRead(TimestampedModel):
     last_name: str
     employee_id: str
     department_id: int
-

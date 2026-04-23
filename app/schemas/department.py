@@ -9,6 +9,15 @@ class DepartmentCreate(BaseModel):
     name: Annotated[str, NameStr]
     code: Annotated[str, CodeStr]
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Computer Science",
+                "code": "CS",
+            }
+        }
+    }
+
     @field_validator("name")
     @classmethod
     def normalize_name(cls, value: str) -> str:
@@ -23,6 +32,15 @@ class DepartmentCreate(BaseModel):
 class DepartmentUpdate(BaseModel):
     name: Annotated[str, NameStr] | None = None
     code: Annotated[str, CodeStr] | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Computer Sciences",
+                "code": "CSE",
+            }
+        }
+    }
 
     @field_validator("name")
     @classmethod
@@ -42,4 +60,3 @@ class DepartmentUpdate(BaseModel):
 class DepartmentRead(TimestampedModel):
     name: str
     code: str
-

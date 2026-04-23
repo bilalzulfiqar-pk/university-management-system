@@ -1,13 +1,378 @@
 # University Management System
 
-Backend-first university management system built with FastAPI and PostgreSQL.
+Backend-first University Management System built with FastAPI and PostgreSQL.
 
-## Quick Start
+This project is designed as an internship practice backend that demonstrates:
+- API design with FastAPI
+- relational data modeling with PostgreSQL
+- authentication and role-based authorization
+- secure password handling and rate limiting
+- migrations with Alembic
+- automated testing
+- production-style backend structure
 
-1. Copy `.env.example` to `.env`.
-2. Start PostgreSQL with `docker compose up -d db`.
-3. Install dependencies.
-4. Run Alembic migrations.
-5. Seed the initial admin account with `seed-admin`.
-6. Start the app with `uvicorn app.main:app --reload`.
+## Core Features
 
+- Admin, teacher, and student roles
+- Bearer JWT authentication
+- Argon2 password hashing
+- forced first-login password change for teacher and student accounts
+- departments, students, teachers, courses, and course offerings
+- teacher assignment to course offerings
+- student enrollment into course offerings
+- student self-service profile and enrolled offerings
+- teacher self-service profile, assigned offerings, and offering rosters
+- soft delete, restore, and restricted hard delete for students and teachers
+- structured error responses
+- request logging with request IDs
+- general API rate limiting plus auth-specific rate limiting
+- admin audit history with structured action metadata
+- OpenAPI/Swagger docs
+- automated test suite
+
+## Tech Stack
+
+- Python 3.11+
+- FastAPI
+- SQLAlchemy 2.0
+- PostgreSQL
+- Alembic
+- Pydantic Settings
+- PyJWT
+- Argon2
+- Pytest
+- Docker Compose for local PostgreSQL
+
+## Project Structure
+
+```text
+university-management-system/
+  app/
+    api/
+      deps.py
+      v1/
+        admin.py
+        auth.py
+        me.py
+        router.py
+    core/
+      audit.py
+      config.py
+      constants.py
+      error_handlers.py
+      exceptions.py
+      logging.py
+      middleware.py
+      rate_limit.py
+      security.py
+    db/
+      base.py
+      session.py
+    models/
+    schemas/
+    scripts/
+      seed_admin.py
+    services/
+    main.py
+  alembic/
+    versions/
+  tests/
+  .env.example
+  docker-compose.yml
+  pyproject.toml
+  README.md
+```
+
+## Domain Model
+
+Main entities:
+- `users`
+- `departments`
+- `students`
+- `teachers`
+- `courses`
+- `course_offerings`
+- `course_offering_teachers`
+- `enrollments`
+- `admin_audit_logs`
+
+Important modeling decision:
+- students and teachers are assigned to `course_offerings`, not directly to `courses`
+- this allows the same course to be offered in different terms/years/sections
+
+## Roles And Access
+
+`ADMIN`
+- can manage departments, students, teachers, courses, and course offerings
+- can assign teachers and enroll students
+- can view audit logs
+
+`TEACHER`
+- can view own profile
+- can view own assigned course offerings
+- can view students enrolled in own assigned offerings
+
+`STUDENT`
+- can view own profile
+- can view own enrolled course offerings
+
+## Authentication And Security
+
+- login uses bearer JWT
+- passwords are hashed with Argon2
+- student and teacher accounts are created by admin with a temporary password
+- teacher and student must change password on first login
+- logout invalidates older tokens by incrementing `token_version`
+- login is rate-limited by IP and by IP+email
+- change-password has a dedicated per-user limiter
+- all `/api/v1` routes use general read/write rate limiting except login, which uses dedicated login limiters
+- admin write actions are stored in `admin_audit_logs`
+
+## Rate Limiting Summary
+
+`POST /api/v1/auth/login`
+- login IP-only limiter
+- login IP+email limiter
+
+`POST /api/v1/auth/change-password`
+- general middleware write limiter
+- dedicated per-user change-password limiter
+
+Other `GET /api/v1/...`
+- general middleware read limiter
+
+Other `POST/PATCH/DELETE /api/v1/...`
+- general middleware write limiter
+
+## API Base URL
+
+All API routes are grouped under:
+
+```text
+/api/v1
+```
+
+Examples:
+- `/api/v1/auth/login`
+- `/api/v1/admin/students`
+- `/api/v1/me/student`
+
+## Environment Setup
+
+1. Copy the example file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+2. Review the important values in `.env`:
+- `DATABASE_URL`
+- `SECRET_KEY`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- CORS and rate-limit settings if needed
+
+Example defaults:
+
+```env
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=ChangeMe123!
+```
+
+## Installation
+
+Recommended setup with a virtual environment:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+## Run Locally
+
+Start PostgreSQL:
+
+```powershell
+docker compose up -d db
+```
+
+Apply migrations:
+
+```powershell
+alembic upgrade head
+```
+
+Seed the initial admin:
+
+```powershell
+seed-admin
+```
+
+Start the FastAPI app:
+
+```powershell
+uvicorn app.main:app --reload
+```
+
+Useful URLs:
+- Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+
+Stop local PostgreSQL:
+
+```powershell
+docker compose down
+```
+
+## Database Migrations
+
+Create a new migration after schema changes:
+
+```powershell
+alembic revision -m "describe change"
+```
+
+Upgrade to latest migration:
+
+```powershell
+alembic upgrade head
+```
+
+Downgrade one step:
+
+```powershell
+alembic downgrade -1
+```
+
+## Seed Command
+
+The seed script creates the first admin user if it does not already exist.
+
+Command:
+
+```powershell
+seed-admin
+```
+
+What it does:
+- reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment
+- creates an admin user if missing
+- stores the password as an Argon2 hash
+
+## Testing
+
+Run the automated test suite:
+
+```powershell
+pytest -q
+```
+
+Current tests cover:
+- admin login
+- invalid login rejection
+- first-login password change flow
+- logout/password token invalidation behavior
+- role-based access control
+- duplicate assignment and enrollment protection
+- soft delete, restore, and restricted hard delete
+- audit log capture
+- rate limiting behavior
+
+## Manual Testing Flow
+
+Recommended order:
+
+1. Login as admin
+2. Create department
+3. Create course
+4. Create course offering
+5. Create teacher
+6. Create student
+7. Assign teacher to offering
+8. Enroll student into offering
+9. Login as teacher and change password
+10. Verify teacher can view own offerings and roster
+11. Login as student and change password
+12. Verify student can view own profile and offerings
+13. Verify forbidden access for teacher/student on admin routes
+14. Verify audit logs
+
+## Swagger Testing Notes
+
+After login:
+- copy the `access_token`
+- click `Authorize` in Swagger
+- enter:
+
+```text
+Bearer YOUR_ACCESS_TOKEN
+```
+
+Then call protected endpoints.
+
+## Postman Testing Notes
+
+Suggested collection order:
+- admin login
+- auth me
+- create department
+- create course
+- create offering
+- create teacher
+- create student
+- assign teacher
+- enroll student
+- teacher login and password change
+- teacher self-service endpoints
+- student login and password change
+- student self-service endpoints
+- audit logs
+
+## Audit History
+
+Admin write actions are stored with both technical and UI-friendly fields.
+
+Example:
+
+```json
+{
+  "action": "CREATE_STUDENT",
+  "entity_type": "student",
+  "entity_id": 7,
+  "entity_label": "Bilal Khan (ST-001)",
+  "description": "Admin created student Bilal Khan (ST-001)."
+}
+```
+
+This allows the frontend to display readable history without guessing from route paths.
+
+## Important Defaults
+
+- backend-first MVP
+- single campus only
+- bearer JWT, not cookie auth
+- no CSRF because cookie auth is not used
+- no refresh tokens in MVP
+- no attendance, grades, uploads, or notifications in MVP
+- course offerings use allowed terms: `SPRING`, `SUMMER`, `FALL`
+
+## Demo Scenario
+
+1. Admin logs in
+2. Admin creates department, course, offering, teacher, and student
+3. Admin assigns teacher and enrolls student
+4. Teacher logs in, changes password, and views only assigned roster
+5. Student logs in, changes password, and views only own offerings
+6. Admin reviews audit history
+7. Unauthorized route access is rejected
+
+## Future Improvements
+
+- frontend application in `frontend/`
+- richer audit log filtering and dashboard views
+- stronger OpenAPI examples for every endpoint
+- broader edge-case test coverage
+- optional refresh token flow if the project later needs long-lived browser sessions

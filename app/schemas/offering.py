@@ -13,6 +13,18 @@ class CourseOfferingCreate(BaseModel):
     section: Annotated[str, SectionStr]
     capacity: int | None = Field(default=None, gt=0)
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "course_id": 1,
+                "term": "FALL",
+                "year": 2026,
+                "section": "A",
+                "capacity": 30,
+            }
+        }
+    }
+
     @field_validator("section")
     @classmethod
     def normalize_section(cls, value: str) -> str:
@@ -25,6 +37,15 @@ class CourseOfferingUpdate(BaseModel):
     year: int | None = Field(default=None, ge=2000, le=2100)
     section: Annotated[str, SectionStr] | None = None
     capacity: int | None = Field(default=None, gt=0)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "section": "B",
+                "capacity": 40,
+            }
+        }
+    }
 
     @field_validator("section")
     @classmethod
@@ -44,4 +65,3 @@ class CourseOfferingRead(TimestampedModel):
     capacity: int | None = None
     teacher_ids: list[int] = Field(default_factory=list)
     student_count: int = 0
-

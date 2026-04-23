@@ -8,10 +8,28 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "email": "admin@example.com",
+                "password": "ChangeMe123!",
+            }
+        }
+    }
+
 
 class ChangePasswordRequest(BaseModel):
     current_password: str = Field(min_length=8, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "current_password": "Teacher123!",
+                "new_password": "TeacherNew123!",
+            }
+        }
+    }
 
     @field_validator("new_password")
     @classmethod
@@ -35,4 +53,3 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: AuthMeResponse
-

@@ -22,6 +22,21 @@ class StudentCreate(BaseModel):
     current_semester: int = Field(ge=1, le=12)
     is_active: bool = True
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "email": "student1@example.com",
+                "temporary_password": "Student123!",
+                "first_name": "Ali",
+                "last_name": "Raza",
+                "roll_number": "ST-001",
+                "department_id": 1,
+                "current_semester": 5,
+                "is_active": True,
+            }
+        }
+    }
+
     @field_validator("temporary_password")
     @classmethod
     def validate_password(cls, value: str) -> str:
@@ -47,6 +62,16 @@ class StudentUpdate(BaseModel):
     department_id: int | None = Field(default=None, gt=0)
     current_semester: int | None = Field(default=None, ge=1, le=12)
     is_active: bool | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "first_name": "Bilal",
+                "current_semester": 6,
+                "is_active": True,
+            }
+        }
+    }
 
     @field_validator("temporary_password")
     @classmethod
@@ -80,4 +105,3 @@ class StudentRead(TimestampedModel):
     roll_number: str
     department_id: int
     current_semester: int
-

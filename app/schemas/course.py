@@ -11,6 +11,17 @@ class CourseCreate(BaseModel):
     credit_hours: int = Field(gt=0)
     department_id: int = Field(gt=0)
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Database Systems",
+                "code": "CS301",
+                "credit_hours": 3,
+                "department_id": 1,
+            }
+        }
+    }
+
     @field_validator("name")
     @classmethod
     def normalize_name(cls, value: str) -> str:
@@ -27,6 +38,15 @@ class CourseUpdate(BaseModel):
     code: Annotated[str, CodeStr] | None = None
     credit_hours: int | None = Field(default=None, gt=0)
     department_id: int | None = Field(default=None, gt=0)
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Advanced Database Systems",
+                "credit_hours": 4,
+            }
+        }
+    }
 
     @field_validator("name")
     @classmethod
@@ -48,4 +68,3 @@ class CourseRead(TimestampedModel):
     code: str
     credit_hours: int
     department_id: int
-
