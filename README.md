@@ -27,6 +27,7 @@ This project is designed as an internship practice backend that demonstrates:
 - request logging with request IDs
 - general API rate limiting plus auth-specific rate limiting
 - admin audit history with structured action metadata
+- frontend dashboard in React + Vite + TypeScript
 - OpenAPI/Swagger docs
 - automated test suite
 
@@ -42,6 +43,12 @@ This project is designed as an internship practice backend that demonstrates:
 - Argon2
 - Pytest
 - Docker Compose for local PostgreSQL
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
+- TanStack Query
+- React Hook Form + Zod
 
 ## Project Structure
 
@@ -76,6 +83,13 @@ university-management-system/
     main.py
   alembic/
     versions/
+  frontend/
+    src/
+      app/
+      components/
+      features/
+      lib/
+      styles/
   tests/
   .env.example
   docker-compose.yml
@@ -216,10 +230,19 @@ Start the FastAPI app:
 uvicorn app.main:app --reload
 ```
 
+Start the frontend app in a second terminal:
+
+```powershell
+Set-Location frontend
+npm install
+npm run dev
+```
+
 Useful URLs:
 - Swagger UI: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 - Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- Frontend app: [http://127.0.0.1:5173](http://127.0.0.1:5173)
 
 Stop local PostgreSQL:
 
@@ -268,6 +291,14 @@ Run the automated test suite:
 
 ```powershell
 pytest -q
+```
+
+Run frontend lint and production build:
+
+```powershell
+Set-Location frontend
+npm run lint
+npm run build
 ```
 
 Current tests cover:
@@ -349,6 +380,24 @@ Example:
 
 This allows the frontend to display readable history without guessing from route paths.
 
+## Frontend Overview
+
+The frontend lives in `frontend/` and currently includes:
+- login and forced change-password flow
+- role-aware routing and route guards
+- admin dashboard plus CRUD pages for departments, students, teachers, courses, and course offerings
+- offering detail page with assignment and enrollment actions
+- teacher dashboard, profile, offerings, and roster screens
+- student dashboard, profile, and enrollment screens
+- audit log timeline using backend `description`
+
+Frontend auth behavior:
+- stores the bearer token in localStorage for the MVP
+- bootstraps current user from `GET /api/v1/auth/me`
+- redirects users by role after login
+- forces `must_change_password` users to `/change-password`
+- uses a Vite proxy by default so local API calls work against `http://127.0.0.1:8000`
+
 ## Important Defaults
 
 - backend-first MVP
@@ -371,7 +420,6 @@ This allows the frontend to display readable history without guessing from route
 
 ## Future Improvements
 
-- frontend application in `frontend/`
 - richer audit log filtering and dashboard views
 - stronger OpenAPI examples for every endpoint
 - broader edge-case test coverage
