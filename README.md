@@ -1,15 +1,33 @@
 # University Management System
 
-Backend-first University Management System built with FastAPI and PostgreSQL.
+Secure full-stack University Management System built with FastAPI, PostgreSQL, React, and TypeScript.
 
-This project is designed as an internship practice backend that demonstrates:
+This project started as a backend-first internship practice system and evolved into a more complete academic operations platform with:
+
+- secure cookie-based session authentication
+- role-based admin, teacher, and student workspaces
+- realistic course-offering based academic workflows
+- production-style security hardening
+- automated testing and security verification
+
+It demonstrates:
 - API design with FastAPI
 - relational data modeling with PostgreSQL
 - authentication and role-based authorization
 - secure cookie-backed session handling, CSRF protection, and rate limiting
 - migrations with Alembic
 - automated testing
-- production-style backend structure
+- production-style backend and frontend structure
+
+## Project Highlights
+
+- Full-stack role-based dashboard for `ADMIN`, `TEACHER`, and `STUDENT`
+- Course offerings modeled as the real operational unit for assignment and enrollment
+- Cookie-based access + refresh session architecture with CSRF and trusted-origin enforcement
+- Optional TOTP / Google Authenticator two-factor authentication
+- Redis-backed rate limiting and token/session security in the hardened profile
+- Admin audit history with structured, UI-friendly event descriptions
+- Pakistan-focused seeded demo data with HEC-inspired BSCS / BSSE / BSIT sample records
 
 ## Core Features
 
@@ -46,7 +64,7 @@ This project is designed as an internship practice backend that demonstrates:
 - PyJWT
 - Argon2
 - Pytest
-- Docker Compose for local PostgreSQL
+- Docker Compose for local PostgreSQL and Redis
 - React
 - Vite
 - TypeScript
@@ -471,4 +489,4 @@ Frontend auth behavior:
 - richer audit log filtering and dashboard views
 - stronger OpenAPI examples for every endpoint
 - broader edge-case test coverage
-- optional TOTP/Google Authenticator 2FA layered onto the session flow
+- recovery codes and expanded account-security controls
