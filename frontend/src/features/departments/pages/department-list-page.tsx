@@ -68,9 +68,9 @@ export function DepartmentListPage() {
       />
 
       <Card className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid gap-3 xl:grid-cols-[2fr_auto_1fr] xl:items-center">
           <form
-            className="flex flex-1 flex-col gap-3 md:flex-row"
+            className="contents"
             onSubmit={(event) => {
               event.preventDefault();
               setOffset(0);
