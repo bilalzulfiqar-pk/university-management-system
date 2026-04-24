@@ -36,6 +36,15 @@ textarea {
   font: inherit;
 }
 
+select {
+  background-image: none;
+}
+
+select option {
+  background: #ffffff;
+  color: #102033;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
