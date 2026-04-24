@@ -272,18 +272,32 @@ alembic downgrade -1
 
 ## Seed Command
 
-The seed script creates the first admin user if it does not already exist.
+The project includes two seed commands:
 
-Command:
+- `seed-admin` creates the first admin user if it does not already exist
+- `seed-demo-data` loads a Pakistan-focused demo dataset with BS Computer Science, BS Software Engineering, and BS Information Technology sample data
+
+Admin command:
 
 ```powershell
 seed-admin
 ```
 
-What it does:
+Demo data command:
+
+```powershell
+seed-demo-data --reset
+```
+
+What `seed-admin` does:
 - reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment
 - creates an admin user if missing
 - stores the password as an Argon2 hash
+
+What `seed-demo-data --reset` does:
+- clears existing non-admin academic data and audit logs
+- seeds HEC-aligned demo departments, courses, offerings, teachers, students, assignments, and enrollments
+- uses a shared temporary password for seeded teacher/student accounts
 
 ## Testing
 

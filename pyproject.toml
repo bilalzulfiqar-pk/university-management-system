@@ -24,6 +24,7 @@ dev = [
 
 [project.scripts]
 seed-admin = "app.scripts.seed_admin:main"
+seed-demo-data = "app.scripts.seed_demo_data:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]
