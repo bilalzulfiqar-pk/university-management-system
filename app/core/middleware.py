@@ -31,6 +31,7 @@ LOOPBACK_HOST_ALIASES = {
     "127.0.0.1": {"localhost", "127.0.0.1", "[::1]"},
     "[::1]": {"localhost", "127.0.0.1", "[::1]"},
 }
+DEFAULT_DEV_FRONTEND_PORTS = (3000, 5173)
 
 read_rate_limiter = FixedWindowRateLimiter(
     max_attempts=settings.api_read_rate_limit_attempts,
@@ -111,6 +112,10 @@ def _build_allowed_origins(request: Request) -> set[str]:
     origins = {origin.rstrip("/") for origin in settings.trusted_origins}
     origins.update(origin.rstrip("/") for origin in settings.cors_origins)
     origins.add(str(request.base_url).rstrip("/"))
+    if not settings.is_production:
+        for host in ("localhost", "127.0.0.1", "[::1]"):
+            for port in DEFAULT_DEV_FRONTEND_PORTS:
+                origins.add(f"http://{host}:{port}")
     expanded_origins = set(origins)
 
     for origin in origins:
