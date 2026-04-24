@@ -31,7 +31,7 @@ export function TeacherDashboardPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Assigned offerings" value={offeringsQuery.data.total} />
         <StatCard label="Students across offerings" value={totalStudents} />
-        <StatCard label="Department" value={`#${profileQuery.data.department_id}`} />
+        <StatCard label="Department" value={profileQuery.data.department_name ?? "Not available"} />
       </div>
 
       <Card className="space-y-4">

@@ -103,3 +103,4 @@ class TeacherRead(TimestampedModel):
     last_name: str
     employee_id: str
     department_id: int
+    department_name: str | None = None

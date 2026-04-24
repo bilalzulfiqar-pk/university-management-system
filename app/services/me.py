@@ -68,7 +68,7 @@ class MeService:
         teacher = self.db.scalar(
             select(Teacher)
             .join(Teacher.user)
-            .options(selectinload(Teacher.user))
+            .options(selectinload(Teacher.user), selectinload(Teacher.department))
             .where(Teacher.user_id == user.id, Teacher.deleted_at.is_(None), User.deleted_at.is_(None))
         )
         if teacher is None:

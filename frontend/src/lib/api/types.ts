@@ -121,6 +121,7 @@ export interface TeacherRead extends TimestampedModel {
   last_name: string;
   employee_id: string;
   department_id: number;
+  department_name: string | null;
 }
 
 export interface TeacherPayload {

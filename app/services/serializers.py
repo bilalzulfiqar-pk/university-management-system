@@ -72,6 +72,7 @@ def serialize_teacher(teacher: Teacher) -> TeacherRead:
         last_name=teacher.last_name,
         employee_id=teacher.employee_id,
         department_id=teacher.department_id,
+        department_name=teacher.department.name if teacher.department is not None else None,
         created_at=teacher.created_at,
         updated_at=teacher.updated_at,
         deleted_at=teacher.deleted_at,
