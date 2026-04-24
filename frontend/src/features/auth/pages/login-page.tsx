@@ -17,6 +17,10 @@ import { getRoleHome } from "@/lib/constants/navigation";
 const schema = z.object({
   email: z.email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  totp_code: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || /^\d{6}$/.test(value), "Authenticator code must be 6 digits."),
 });
 
 type LoginValues = z.infer<typeof schema>;
@@ -26,6 +30,7 @@ export function LoginPage() {
   const location = useLocation();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [showTotpField, setShowTotpField] = useState(false);
 
   const {
     register,
@@ -37,12 +42,22 @@ export function LoginPage() {
     defaultValues: {
       email: "admin@example.com",
       password: "ChangeMe123!!",
+      totp_code: "",
     },
   });
 
   const onSubmit = handleSubmit(async (values) => {
+    if (showTotpField && !values.totp_code.trim()) {
+      setError("totp_code", { message: "Enter the 6-digit code from your authenticator app." });
+      return;
+    }
+
     try {
-      const result = await login(values);
+      const result = await login({
+        email: values.email,
+        password: values.password,
+        totp_code: values.totp_code.trim() || undefined,
+      });
       toast.success(`Welcome back${result.user.first_name ? `, ${result.user.first_name}` : ""}.`);
       const destination = result.user.must_change_password
         ? "/change-password"
@@ -50,6 +65,16 @@ export function LoginPage() {
       navigate(destination, { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
+        if (error.code === "TOTP_REQUIRED") {
+          setShowTotpField(true);
+          setError("totp_code", { message: "Enter the 6-digit code from Google Authenticator." });
+          return;
+        }
+        if (error.code === "INVALID_TOTP_CODE") {
+          setShowTotpField(true);
+          setError("totp_code", { message: error.message });
+          return;
+        }
         setError("root", { message: error.message });
         return;
       }
@@ -95,6 +120,23 @@ export function LoginPage() {
             </button>
           </div>
         </Field>
+
+        {showTotpField ? (
+          <Field
+            label="Authenticator code"
+            hint="Enter the current 6-digit code from Google Authenticator."
+            error={errors.totp_code?.message}
+          >
+            <Input
+              type="text"
+              placeholder="123456"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              {...register("totp_code")}
+            />
+          </Field>
+        ) : null}
 
         {errors.root?.message ? (
           <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">

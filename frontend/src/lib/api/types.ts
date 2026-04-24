@@ -42,6 +42,7 @@ export interface AuthUser {
   role: UserRole;
   is_active: boolean;
   must_change_password: boolean;
+  totp_enabled: boolean;
   profile_id: number | null;
   first_name: string | null;
   last_name: string | null;
@@ -56,11 +57,25 @@ export interface SessionResponse {
 export interface LoginPayload {
   email: string;
   password: string;
+  totp_code?: string;
 }
 
 export interface ChangePasswordPayload {
   current_password: string;
   new_password: string;
+}
+
+export interface TotpStatusResponse {
+  enabled: boolean;
+}
+
+export interface TotpSetupResponse {
+  secret: string;
+  provisioning_uri: string;
+}
+
+export interface TotpCodePayload {
+  code: string;
 }
 
 export interface DepartmentRead extends TimestampedModel {

@@ -19,6 +19,7 @@ Admin-first dashboard frontend for the University Management System.
 - auth bootstrap from `/api/v1/auth/me`
 - secure cookie-backed session auth with silent refresh
 - automatic CSRF header injection for mutating requests
+- optional Google Authenticator / TOTP setup and login verification
 - role-based route guards
 - shared app shell with sidebar and top bar
 - admin dashboard and CRUD pages

@@ -1,3 +1,5 @@
+import pyotp
+
 from app.core.config import settings
 
 
@@ -159,6 +161,82 @@ def test_refresh_rotates_session_cookie_and_reuse_revokes_session(client, admin_
     )
     assert second_refresh.status_code == 401
     assert second_refresh.json()["error"]["code"] == "INVALID_REFRESH_TOKEN"
+
+
+def test_totp_setup_enable_and_login_flow(client, admin_user):
+    login_response = login(client, "admin@example.com", "AdminPass123!")
+    assert login_response.status_code == 200
+
+    setup_response = client.post("/api/v1/auth/totp/setup", headers=stateful_headers(client))
+    assert setup_response.status_code == 200
+    setup_body = setup_response.json()
+    assert setup_body["secret"]
+    assert "otpauth://" in setup_body["provisioning_uri"]
+
+    totp = pyotp.TOTP(setup_body["secret"])
+    enable_response = client.post(
+        "/api/v1/auth/totp/enable",
+        headers=stateful_headers(client),
+        json={"code": totp.now()},
+    )
+    assert enable_response.status_code == 200
+
+    status_response = client.get("/api/v1/auth/totp")
+    assert status_response.status_code == 200
+    assert status_response.json()["enabled"] is True
+
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
+
+    missing_code_login = login(client, "admin@example.com", "AdminPass123!")
+    assert missing_code_login.status_code == 401
+    assert missing_code_login.json()["error"]["code"] == "TOTP_REQUIRED"
+
+    invalid_code_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@example.com", "password": "AdminPass123!", "totp_code": "000000"},
+    )
+    assert invalid_code_login.status_code == 401
+    assert invalid_code_login.json()["error"]["code"] == "INVALID_TOTP_CODE"
+
+    valid_code_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@example.com", "password": "AdminPass123!", "totp_code": totp.now()},
+    )
+    assert valid_code_login.status_code == 200
+    assert valid_code_login.json()["user"]["totp_enabled"] is True
+
+
+def test_totp_disable_requires_valid_code(client, admin_user):
+    login(client, "admin@example.com", "AdminPass123!")
+    setup_response = client.post("/api/v1/auth/totp/setup", headers=stateful_headers(client))
+    secret = setup_response.json()["secret"]
+    totp = pyotp.TOTP(secret)
+
+    enable_response = client.post(
+        "/api/v1/auth/totp/enable",
+        headers=stateful_headers(client),
+        json={"code": totp.now()},
+    )
+    assert enable_response.status_code == 200
+
+    invalid_disable = client.post(
+        "/api/v1/auth/totp/disable",
+        headers=stateful_headers(client),
+        json={"code": "000000"},
+    )
+    assert invalid_disable.status_code == 400
+    assert invalid_disable.json()["error"]["code"] == "INVALID_TOTP_CODE"
+
+    disable_response = client.post(
+        "/api/v1/auth/totp/disable",
+        headers=stateful_headers(client),
+        json={"code": totp.now()},
+    )
+    assert disable_response.status_code == 200
+
+    status_response = client.get("/api/v1/auth/totp")
+    assert status_response.status_code == 200
+    assert status_response.json()["enabled"] is False
 
 
 def create_department(client) -> int:

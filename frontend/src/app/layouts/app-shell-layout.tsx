@@ -17,6 +17,10 @@ const routeCopy: Record<string, { title: string; description: string }> = {
     title: "Student Dashboard",
     description: "Review your profile and enrolled course offerings from one simple home base.",
   },
+  "/security": {
+    title: "Security Settings",
+    description: "Manage authenticator app protection for your account.",
+  },
 };
 
 export function AppShellLayout() {

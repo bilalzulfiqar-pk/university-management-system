@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pyotp
 from fastapi import Request, Response
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
@@ -30,6 +31,7 @@ from app.core.token_blocklist import access_token_blocklist
 from app.models.auth_session import AuthSession
 from app.models.user import User
 from app.schemas.auth import AuthMeResponse, ChangePasswordRequest, LoginRequest, SessionResponse
+from app.schemas.auth import TotpCodeRequest, TotpSetupResponse, TotpStatusResponse
 from app.services.common import commit_or_rollback
 from app.services.serializers import serialize_auth_user
 
@@ -109,6 +111,13 @@ class AuthService:
         if not verify_password(payload.password, user.password_hash):
             log_security_event("login_failed", email=payload.email.lower(), ip=get_client_ip(request), reason="invalid_credentials")
             raise UnauthorizedError(code="INVALID_CREDENTIALS", message="Invalid email or password.")
+        if user.totp_enabled:
+            if not payload.totp_code:
+                log_security_event("login_totp_required", user_id=user.id, ip=get_client_ip(request))
+                raise UnauthorizedError(code="TOTP_REQUIRED", message="Authenticator code is required.")
+            if not self._verify_totp_code(user, payload.totp_code):
+                log_security_event("login_failed", user_id=user.id, ip=get_client_ip(request), reason="invalid_totp")
+                raise UnauthorizedError(code="INVALID_TOTP_CODE", message="Authenticator code is invalid.")
 
         login_rate_limiter.clear(rate_limit_key)
         login_ip_rate_limiter.clear(client_ip_key)
@@ -182,6 +191,45 @@ class AuthService:
 
     def me(self, user: User) -> AuthMeResponse:
         return serialize_auth_user(user)
+
+    def totp_status(self, user: User) -> TotpStatusResponse:
+        return TotpStatusResponse(enabled=user.totp_enabled)
+
+    def begin_totp_setup(self, user: User) -> TotpSetupResponse:
+        if user.totp_enabled:
+            raise BadRequestError(code="TOTP_ALREADY_ENABLED", message="Authenticator app is already enabled.")
+
+        secret = pyotp.random_base32()
+        user.totp_secret = secret
+        commit_or_rollback(self.db)
+        provisioning_uri = self._build_totp(user).provisioning_uri(name=user.email, issuer_name=settings.app_name)
+        log_security_event("totp_setup_started", user_id=user.id)
+        return TotpSetupResponse(secret=secret, provisioning_uri=provisioning_uri)
+
+    def enable_totp(self, user: User, payload: TotpCodeRequest) -> dict[str, bool | str]:
+        if user.totp_secret is None:
+            raise BadRequestError(code="TOTP_SETUP_REQUIRED", message="Start authenticator setup before enabling it.")
+        if user.totp_enabled:
+            raise BadRequestError(code="TOTP_ALREADY_ENABLED", message="Authenticator app is already enabled.")
+        if not self._verify_totp_code(user, payload.code):
+            raise BadRequestError(code="INVALID_TOTP_CODE", message="Authenticator code is invalid.")
+
+        user.totp_enabled = True
+        commit_or_rollback(self.db)
+        log_security_event("totp_enabled", user_id=user.id)
+        return {"success": True, "message": "Authenticator app enabled successfully."}
+
+    def disable_totp(self, user: User, payload: TotpCodeRequest) -> dict[str, bool | str]:
+        if not user.totp_enabled or user.totp_secret is None:
+            raise BadRequestError(code="TOTP_NOT_ENABLED", message="Authenticator app is not enabled.")
+        if not self._verify_totp_code(user, payload.code):
+            raise BadRequestError(code="INVALID_TOTP_CODE", message="Authenticator code is invalid.")
+
+        user.totp_enabled = False
+        user.totp_secret = None
+        commit_or_rollback(self.db)
+        log_security_event("totp_disabled", user_id=user.id)
+        return {"success": True, "message": "Authenticator app disabled successfully."}
 
     def _build_session_response(
         self,
@@ -296,6 +344,16 @@ class AuthService:
             .where(AuthSession.user_id == user_id, AuthSession.revoked_at.is_(None))
             .values(revoked_at=utcnow())
         )
+
+    def _build_totp(self, user: User) -> pyotp.TOTP:
+        if user.totp_secret is None:
+            raise BadRequestError(code="TOTP_SETUP_REQUIRED", message="Authenticator setup is not available.")
+        return pyotp.TOTP(user.totp_secret)
+
+    def _verify_totp_code(self, user: User, code: str) -> bool:
+        if user.totp_secret is None:
+            return False
+        return bool(pyotp.TOTP(user.totp_secret).verify(code, valid_window=1))
 
 
 def create_admin_user(

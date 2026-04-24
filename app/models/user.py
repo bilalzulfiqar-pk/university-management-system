@@ -21,6 +21,8 @@ class User(PrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     token_version: Mapped[int] = mapped_column(default=0, nullable=False)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     student = relationship("Student", back_populates="user", uselist=False)
     teacher = relationship("Teacher", back_populates="user", uselist=False)

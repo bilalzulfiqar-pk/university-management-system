@@ -31,6 +31,7 @@ def serialize_auth_user(user: User) -> AuthMeResponse:
         role=UserRole(user.role),
         is_active=user.is_active,
         must_change_password=user.must_change_password,
+        totp_enabled=user.totp_enabled,
         profile_id=profile_id,
         first_name=first_name,
         last_name=last_name,
@@ -96,4 +97,3 @@ def serialize_offering(offering: CourseOffering) -> CourseOfferingRead:
         updated_at=offering.updated_at,
         deleted_at=offering.deleted_at,
     )
-

@@ -5,6 +5,7 @@ import { AppShellLayout } from "@/app/layouts/app-shell-layout";
 import { AuthLayout } from "@/app/layouts/auth-layout";
 import { ChangePasswordPage } from "@/features/auth/pages/change-password-page";
 import { LoginPage } from "@/features/auth/pages/login-page";
+import { SecurityPage } from "@/features/auth/pages/security-page";
 import { AuditLogPage } from "@/features/audit-logs/pages/audit-log-page";
 import { CourseFormPage } from "@/features/courses/pages/course-form-page";
 import { CourseListPage } from "@/features/courses/pages/course-list-page";
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShellLayout />,
         children: [
+          { path: "/security", element: <SecurityPage /> },
           {
             path: "/admin",
             element: <RoleRoute role="ADMIN" />,

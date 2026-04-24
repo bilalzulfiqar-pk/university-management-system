@@ -16,6 +16,7 @@ This project is designed as an internship practice backend that demonstrates:
 - Admin, teacher, and student roles
 - short-lived access cookies plus refresh-session rotation
 - Argon2 password hashing
+- optional TOTP / Google Authenticator two-factor authentication
 - forced first-login password change for teacher and student accounts
 - departments, students, teachers, courses, and course offerings
 - teacher assignment to course offerings
@@ -147,6 +148,7 @@ Important modeling decision:
 - login is rate-limited by IP and by IP+email
 - change-password has a dedicated per-user limiter
 - refresh has its own limiter and refresh-token reuse revokes the current session
+- users can enable or disable Google Authenticator compatible TOTP from the security page
 - all mutating cookie-authenticated API routes require a matching `X-CSRF-Token` header and a trusted `Origin`
 - all `/api/v1` routes use general read/write rate limiting except login, which uses dedicated login limiters
 - admin write actions are stored in `admin_audit_logs`
@@ -438,8 +440,10 @@ Frontend auth behavior:
 - automatically refreshes expired access sessions through `POST /api/v1/auth/refresh`
 - attaches `X-CSRF-Token` automatically on mutating requests
 - never stores auth tokens in localStorage
+- supports optional Google Authenticator login by prompting for the 6-digit code only when the backend requires it
 - redirects users by role after login
 - forces `must_change_password` users to `/change-password`
+- includes a shared `/security` page where users can set up or disable TOTP with a QR code
 - uses a Vite proxy by default so local API calls work against `http://127.0.0.1:8000`
 
 ## Important Defaults

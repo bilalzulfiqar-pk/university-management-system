@@ -1,7 +1,15 @@
 from fastapi import APIRouter, Depends, Request, Response
 
 from app.api.deps import CurrentUser, SessionDep, document_csrf_header
-from app.schemas.auth import AuthMeResponse, ChangePasswordRequest, LoginRequest, SessionResponse
+from app.schemas.auth import (
+    AuthMeResponse,
+    ChangePasswordRequest,
+    LoginRequest,
+    SessionResponse,
+    TotpCodeRequest,
+    TotpSetupResponse,
+    TotpStatusResponse,
+)
 from app.schemas.common import MessageResponse
 from app.services.auth import AuthService
 
@@ -68,3 +76,48 @@ def change_password(
 )
 def me(db: SessionDep, user: CurrentUser) -> AuthMeResponse:
     return AuthService(db).me(user)
+
+
+@router.get(
+    "/totp",
+    response_model=TotpStatusResponse,
+    summary="Get authenticator app status",
+    description="Return whether TOTP/Google Authenticator is currently enabled for the authenticated user.",
+)
+def totp_status(db: SessionDep, user: CurrentUser) -> TotpStatusResponse:
+    return AuthService(db).totp_status(user)
+
+
+@router.post(
+    "/totp/setup",
+    response_model=TotpSetupResponse,
+    summary="Start authenticator app setup",
+    description="Generate a TOTP secret and provisioning URI for Google Authenticator style apps.",
+    dependencies=[Depends(document_csrf_header)],
+)
+def setup_totp(db: SessionDep, user: CurrentUser) -> TotpSetupResponse:
+    return AuthService(db).begin_totp_setup(user)
+
+
+@router.post(
+    "/totp/enable",
+    response_model=MessageResponse,
+    summary="Enable authenticator app",
+    description="Verify a six-digit authenticator code and enable TOTP for future logins.",
+    dependencies=[Depends(document_csrf_header)],
+)
+def enable_totp(payload: TotpCodeRequest, db: SessionDep, user: CurrentUser) -> MessageResponse:
+    result = AuthService(db).enable_totp(user, payload)
+    return MessageResponse(**result)
+
+
+@router.post(
+    "/totp/disable",
+    response_model=MessageResponse,
+    summary="Disable authenticator app",
+    description="Verify a six-digit authenticator code and disable TOTP for the authenticated user.",
+    dependencies=[Depends(document_csrf_header)],
+)
+def disable_totp(payload: TotpCodeRequest, db: SessionDep, user: CurrentUser) -> MessageResponse:
+    result = AuthService(db).disable_totp(user, payload)
+    return MessageResponse(**result)

@@ -1,4 +1,4 @@
-import { GraduationCap, LayoutDashboard, LogOut, School, ScrollText, ShieldUser, UsersRound } from "lucide-react";
+import { GraduationCap, LayoutDashboard, LockKeyhole, LogOut, School, ScrollText, ShieldUser, UsersRound } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,16 +16,19 @@ const navByRole: Record<UserRole, Array<{ to: string; label: string; icon: React
     { to: "/admin/courses", label: "Courses", icon: <GraduationCap className="h-4 w-4" /> },
     { to: "/admin/course-offerings", label: "Offerings", icon: <ScrollText className="h-4 w-4" /> },
     { to: "/admin/audit-logs", label: "Audit Logs", icon: <ScrollText className="h-4 w-4" /> },
+    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
   ],
   TEACHER: [
     { to: "/teacher/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/teacher/profile", label: "My Profile", icon: <ShieldUser className="h-4 w-4" /> },
     { to: "/teacher/course-offerings", label: "My Offerings", icon: <GraduationCap className="h-4 w-4" /> },
+    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
   ],
   STUDENT: [
     { to: "/student/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: "/student/profile", label: "My Profile", icon: <ShieldUser className="h-4 w-4" /> },
     { to: "/student/course-offerings", label: "My Enrollments", icon: <GraduationCap className="h-4 w-4" /> },
+    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
   ],
 };
 
