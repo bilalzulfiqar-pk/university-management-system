@@ -97,6 +97,7 @@ export interface StudentRead extends TimestampedModel {
   last_name: string;
   roll_number: string;
   department_id: number;
+  department_name: string | null;
   current_semester: number;
 }
 

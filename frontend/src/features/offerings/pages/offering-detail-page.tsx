@@ -108,7 +108,7 @@ export function OfferingDetailPage() {
         <Card className="space-y-4">
           <h3 className="text-xl font-semibold text-ink-950">Overview</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <OverviewItem label="Course" value={`${offering.course_code} — ${offering.course_name}`} />
+            <OverviewItem label="Course" value={`${offering.course_code} - ${offering.course_name}`} />
             <OverviewItem label="Term and year" value={`${formatTerm(offering.term)} ${offering.year}`} />
             <OverviewItem label="Section" value={offering.section} />
             <OverviewItem label="Capacity" value={offering.capacity ? String(offering.capacity) : "No limit set"} />

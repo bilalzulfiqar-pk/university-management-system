@@ -26,7 +26,7 @@ class MeService:
         student = self.db.scalar(
             select(Student)
             .join(Student.user)
-            .options(selectinload(Student.user))
+            .options(selectinload(Student.user), selectinload(Student.department))
             .where(Student.user_id == user.id, Student.deleted_at.is_(None), User.deleted_at.is_(None))
         )
         if student is None:

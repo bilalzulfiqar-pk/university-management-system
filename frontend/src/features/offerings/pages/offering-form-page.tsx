@@ -114,7 +114,7 @@ export function OfferingFormPage() {
               <option value={0}>Select course</option>
               {coursesQuery.data?.items.map((course) => (
                 <option key={course.id} value={course.id}>
-                  {course.code} — {course.name}
+                  {course.code} - {course.name}
                 </option>
               ))}
             </Select>

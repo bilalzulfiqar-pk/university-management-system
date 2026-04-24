@@ -25,7 +25,7 @@ export function TeacherOfferingsPage() {
           {query.data.items.map((offering) => (
             <Card key={offering.id} className="space-y-3">
               <div>
-                <p className="text-lg font-semibold text-ink-950">{offering.course_code} — {offering.course_name}</p>
+                <p className="text-lg font-semibold text-ink-950">{offering.course_code} - {offering.course_name}</p>
                 <p className="text-sm text-slate-700">{formatTerm(offering.term)} {offering.year} • Section {offering.section}</p>
               </div>
               <p className="text-sm font-medium text-ink-800">{offering.student_count} students enrolled</p>

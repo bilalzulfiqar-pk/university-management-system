@@ -53,6 +53,7 @@ def serialize_student(student: Student) -> StudentRead:
         last_name=student.last_name,
         roll_number=student.roll_number,
         department_id=student.department_id,
+        department_name=student.department.name if student.department is not None else None,
         current_semester=student.current_semester,
         created_at=student.created_at,
         updated_at=student.updated_at,

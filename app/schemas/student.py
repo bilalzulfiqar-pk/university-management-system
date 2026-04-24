@@ -106,4 +106,5 @@ class StudentRead(TimestampedModel):
     last_name: str
     roll_number: str
     department_id: int
+    department_name: str | None = None
     current_semester: int

@@ -27,7 +27,7 @@ export function StudentOfferingDetailPage() {
         description="A simple read-only view of the enrolled offering tied to your own account."
       />
       <Card className="grid gap-4 md:grid-cols-2">
-        <DetailRow label="Course" value={`${offering.course_code} — ${offering.course_name}`} />
+        <DetailRow label="Course" value={`${offering.course_code} - ${offering.course_name}`} />
         <DetailRow label="Section" value={offering.section} />
         <DetailRow label="Capacity" value={offering.capacity ? String(offering.capacity) : "No capacity set"} />
         <DetailRow label="Assigned teachers" value={String(offering.teacher_ids.length)} />

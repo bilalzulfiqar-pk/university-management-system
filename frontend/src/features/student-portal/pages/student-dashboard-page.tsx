@@ -22,7 +22,7 @@ export function StudentDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Current semester" value={profileQuery.data.current_semester} />
-        <StatCard label="Department ID" value={profileQuery.data.department_id} />
+        <StatCard label="Department" value={profileQuery.data.department_name ?? "Not available"} />
         <StatCard label="Enrolled offerings" value={offeringsQuery.data.total} />
       </div>
 
@@ -34,7 +34,7 @@ export function StudentDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {offeringsQuery.data.items.map((offering) => (
               <div key={offering.id} className="rounded-[18px] border border-slate-200 bg-slate-50 p-4">
-                <p className="font-semibold text-ink-950">{offering.course_code} — {offering.course_name}</p>
+                <p className="font-semibold text-ink-950">{offering.course_code} - {offering.course_name}</p>
                 <p className="mt-1 text-sm text-slate-700">{formatTerm(offering.term)} {offering.year} • Section {offering.section}</p>
               </div>
             ))}
