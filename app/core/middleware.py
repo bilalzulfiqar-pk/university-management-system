@@ -4,6 +4,7 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -25,6 +26,11 @@ from app.models.auth_session import AuthSession
 
 logger = logging.getLogger("ums")
 MUTATING_METHODS = {"POST", "PATCH", "DELETE"}
+LOOPBACK_HOST_ALIASES = {
+    "localhost": {"localhost", "127.0.0.1", "[::1]"},
+    "127.0.0.1": {"localhost", "127.0.0.1", "[::1]"},
+    "[::1]": {"localhost", "127.0.0.1", "[::1]"},
+}
 
 read_rate_limiter = FixedWindowRateLimiter(
     max_attempts=settings.api_read_rate_limit_attempts,
@@ -105,7 +111,26 @@ def _build_allowed_origins(request: Request) -> set[str]:
     origins = {origin.rstrip("/") for origin in settings.trusted_origins}
     origins.update(origin.rstrip("/") for origin in settings.cors_origins)
     origins.add(str(request.base_url).rstrip("/"))
-    return origins
+    expanded_origins = set(origins)
+
+    for origin in origins:
+        parsed = urlsplit(origin)
+        if not parsed.scheme or not parsed.netloc:
+            continue
+
+        host = parsed.hostname
+        if host is None:
+            continue
+
+        aliases = LOOPBACK_HOST_ALIASES.get(host)
+        if not aliases:
+            continue
+
+        for alias in aliases:
+            port = f":{parsed.port}" if parsed.port else ""
+            expanded_origins.add(f"{parsed.scheme}://{alias}{port}")
+
+    return expanded_origins
 
 
 def _should_validate_origin(request: Request) -> bool:
