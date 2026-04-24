@@ -1,32 +1,37 @@
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.models.user import User
 
 
-def auth_headers(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}
+def stateful_headers(client) -> dict[str, str]:
+    headers = {"Origin": "http://testserver"}
+    csrf_token = client.cookies.get(settings.csrf_cookie_name)
+    if csrf_token:
+        headers["X-CSRF-Token"] = csrf_token
+    return headers
 
 
-def login(client, email: str, password: str) -> str:
+def login(client, email: str, password: str):
     response = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     assert response.status_code == 200
-    return response.json()["access_token"]
+    return response
 
 
-def create_department(client, headers, *, name: str = "Engineering", code: str = "ENG") -> int:
+def create_department(client, *, name: str = "Engineering", code: str = "ENG") -> int:
     response = client.post(
         "/api/v1/admin/departments",
-        headers=headers,
+        headers=stateful_headers(client),
         json={"name": name, "code": code},
     )
     assert response.status_code == 201
     return response.json()["id"]
 
 
-def create_course(client, headers, department_id: int) -> int:
+def create_course(client, department_id: int) -> int:
     response = client.post(
         "/api/v1/admin/courses",
-        headers=headers,
+        headers=stateful_headers(client),
         json={
             "name": "Databases",
             "code": "CS301",
@@ -38,10 +43,10 @@ def create_course(client, headers, department_id: int) -> int:
     return response.json()["id"]
 
 
-def create_offering(client, headers, course_id: int) -> int:
+def create_offering(client, course_id: int) -> int:
     response = client.post(
         "/api/v1/admin/course-offerings",
-        headers=headers,
+        headers=stateful_headers(client),
         json={
             "course_id": course_id,
             "term": "FALL",
@@ -54,10 +59,10 @@ def create_offering(client, headers, course_id: int) -> int:
     return response.json()["id"]
 
 
-def create_teacher(client, headers, department_id: int) -> dict:
+def create_teacher(client, department_id: int) -> dict:
     response = client.post(
         "/api/v1/admin/teachers",
-        headers=headers,
+        headers=stateful_headers(client),
         json={
             "email": "teacher@example.com",
             "temporary_password": "TeachPass123!",
@@ -72,10 +77,10 @@ def create_teacher(client, headers, department_id: int) -> dict:
     return response.json()
 
 
-def create_student(client, headers, department_id: int) -> dict:
+def create_student(client, department_id: int) -> dict:
     response = client.post(
         "/api/v1/admin/students",
-        headers=headers,
+        headers=stateful_headers(client),
         json={
             "email": "student@example.com",
             "temporary_password": "StudPass123!",
@@ -91,103 +96,87 @@ def create_student(client, headers, department_id: int) -> dict:
     return response.json()
 
 
-def force_password_change(client, email: str, temporary_password: str, new_password: str) -> str:
-    temp_token = login(client, email, temporary_password)
-    headers = auth_headers(temp_token)
+def force_password_change(client, email: str, temporary_password: str, new_password: str) -> None:
+    login(client, email, temporary_password)
     change_response = client.post(
         "/api/v1/auth/change-password",
-        headers=headers,
+        headers=stateful_headers(client),
         json={"current_password": temporary_password, "new_password": new_password},
     )
     assert change_response.status_code == 200
-    return login(client, email, new_password)
 
 
 def test_admin_teacher_student_workflow_and_role_boundaries(client, admin_user):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
+    login(client, "admin@example.com", "AdminPass123!")
 
-    department_id = create_department(client, admin_headers)
-    course_id = create_course(client, admin_headers, department_id)
-    offering_id = create_offering(client, admin_headers, course_id)
-    teacher = create_teacher(client, admin_headers, department_id)
-    student = create_student(client, admin_headers, department_id)
+    department_id = create_department(client)
+    course_id = create_course(client, department_id)
+    offering_id = create_offering(client, course_id)
+    teacher = create_teacher(client, department_id)
+    student = create_student(client, department_id)
 
     assign_response = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/teachers/{teacher['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert assign_response.status_code == 200
 
     enroll_response = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/students/{student['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert enroll_response.status_code == 200
 
-    teacher_token = force_password_change(
-        client,
-        "teacher@example.com",
-        "TeachPass123!",
-        "TeacherNew123!",
-    )
-    teacher_headers = auth_headers(teacher_token)
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
+    force_password_change(client, "teacher@example.com", "TeachPass123!", "TeacherNew123!")
 
-    teacher_admin_access = client.get("/api/v1/admin/students", headers=teacher_headers)
+    teacher_admin_access = client.get("/api/v1/admin/students")
     assert teacher_admin_access.status_code == 403
 
-    teacher_offerings = client.get("/api/v1/me/teacher/course-offerings", headers=teacher_headers)
+    teacher_offerings = client.get("/api/v1/me/teacher/course-offerings")
     assert teacher_offerings.status_code == 200
     assert teacher_offerings.json()["total"] == 1
 
     teacher_roster = client.get(
         f"/api/v1/me/teacher/course-offerings/{offering_id}/students",
-        headers=teacher_headers,
     )
     assert teacher_roster.status_code == 200
     assert teacher_roster.json()["items"][0]["email"] == "student@example.com"
 
-    student_token = force_password_change(
-        client,
-        "student@example.com",
-        "StudPass123!",
-        "StudentNew123!",
-    )
-    student_headers = auth_headers(student_token)
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
+    force_password_change(client, "student@example.com", "StudPass123!", "StudentNew123!")
 
-    student_admin_access = client.get(f"/api/v1/admin/students/{student['id']}", headers=student_headers)
+    student_admin_access = client.get(f"/api/v1/admin/students/{student['id']}")
     assert student_admin_access.status_code == 403
 
-    my_offerings = client.get("/api/v1/me/student/course-offerings", headers=student_headers)
+    my_offerings = client.get("/api/v1/me/student/course-offerings")
     assert my_offerings.status_code == 200
     assert my_offerings.json()["items"][0]["course_code"] == "CS301"
 
-    teacher_student_route = client.get("/api/v1/me/student", headers=teacher_headers)
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
+    force_password_change(client, "teacher@example.com", "TeacherNew123!", "TeacherNewest123!")
+    teacher_student_route = client.get("/api/v1/me/student")
     assert teacher_student_route.status_code == 403
 
 
 def test_student_soft_delete_restore_and_hard_delete_rules(client, admin_user, db_session):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
+    login(client, "admin@example.com", "AdminPass123!")
 
-    department_id = create_department(client, admin_headers, name="Science", code="SCI")
-    course_id = create_course(client, admin_headers, department_id)
-    offering_id = create_offering(client, admin_headers, course_id)
-    student = create_student(client, admin_headers, department_id)
+    department_id = create_department(client, name="Science", code="SCI")
+    course_id = create_course(client, department_id)
+    offering_id = create_offering(client, course_id)
+    student = create_student(client, department_id)
 
     enroll_response = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/students/{student['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert enroll_response.status_code == 200
 
-    soft_delete = client.delete(f"/api/v1/admin/students/{student['id']}", headers=admin_headers)
+    soft_delete = client.delete(f"/api/v1/admin/students/{student['id']}", headers=stateful_headers(client))
     assert soft_delete.status_code == 200
 
-    deleted_list = client.get(
-        "/api/v1/admin/students?include_deleted=true",
-        headers=admin_headers,
-    )
+    deleted_list = client.get("/api/v1/admin/students?include_deleted=true")
     assert deleted_list.status_code == 200
     assert deleted_list.json()["items"][0]["deleted_at"] is not None
 
@@ -196,34 +185,36 @@ def test_student_soft_delete_restore_and_hard_delete_rules(client, admin_user, d
     assert user.is_active is False
     assert user.deleted_at is not None
 
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
     blocked_login = client.post(
         "/api/v1/auth/login",
         json={"email": "student@example.com", "password": "StudPass123!"},
     )
     assert blocked_login.status_code == 401
 
+    login(client, "admin@example.com", "AdminPass123!")
     hard_delete_blocked = client.delete(
         f"/api/v1/admin/students/{student['id']}/hard",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert hard_delete_blocked.status_code == 409
 
-    restore = client.post(f"/api/v1/admin/students/{student['id']}/restore", headers=admin_headers)
+    restore = client.post(f"/api/v1/admin/students/{student['id']}/restore", headers=stateful_headers(client))
     assert restore.status_code == 200
     assert restore.json()["deleted_at"] is None
 
     unenroll = client.delete(
         f"/api/v1/admin/course-offerings/{offering_id}/students/{student['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert unenroll.status_code == 200
 
-    soft_delete_again = client.delete(f"/api/v1/admin/students/{student['id']}", headers=admin_headers)
+    soft_delete_again = client.delete(f"/api/v1/admin/students/{student['id']}", headers=stateful_headers(client))
     assert soft_delete_again.status_code == 200
 
     hard_delete = client.delete(
         f"/api/v1/admin/students/{student['id']}/hard",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert hard_delete.status_code == 200
 
@@ -232,18 +223,17 @@ def test_student_soft_delete_restore_and_hard_delete_rules(client, admin_user, d
 
 
 def test_include_deleted_and_uniqueness_constraints(client, admin_user):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
+    login(client, "admin@example.com", "AdminPass123!")
 
-    department_id = create_department(client, admin_headers, name="Business", code="BUS")
-    course_id = create_course(client, admin_headers, department_id)
-    offering_id = create_offering(client, admin_headers, course_id)
-    teacher = create_teacher(client, admin_headers, department_id)
-    student = create_student(client, admin_headers, department_id)
+    department_id = create_department(client, name="Business", code="BUS")
+    course_id = create_course(client, department_id)
+    offering_id = create_offering(client, course_id)
+    teacher = create_teacher(client, department_id)
+    student = create_student(client, department_id)
 
     duplicate_student = client.post(
         "/api/v1/admin/students",
-        headers=admin_headers,
+        headers=stateful_headers(client),
         json={
             "email": "student@example.com",
             "temporary_password": "StudPass123!",
@@ -259,37 +249,36 @@ def test_include_deleted_and_uniqueness_constraints(client, admin_user):
 
     assign_once = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/teachers/{teacher['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert assign_once.status_code == 200
 
     assign_twice = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/teachers/{teacher['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert assign_twice.status_code == 409
 
     enroll_once = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/students/{student['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert enroll_once.status_code == 200
 
     enroll_twice = client.post(
         f"/api/v1/admin/course-offerings/{offering_id}/students/{student['id']}",
-        headers=admin_headers,
+        headers=stateful_headers(client),
     )
     assert enroll_twice.status_code == 409
 
 
 def test_inactive_teacher_cannot_login(client, admin_user):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
-    department_id = create_department(client, admin_headers, name="Arts", code="ART")
+    login(client, "admin@example.com", "AdminPass123!")
+    department_id = create_department(client, name="Arts", code="ART")
 
     response = client.post(
         "/api/v1/admin/teachers",
-        headers=admin_headers,
+        headers=stateful_headers(client),
         json={
             "email": "inactive.teacher@example.com",
             "temporary_password": "TeachPass123!",
@@ -302,6 +291,7 @@ def test_inactive_teacher_cannot_login(client, admin_user):
     )
     assert response.status_code == 201
 
+    client.post("/api/v1/auth/logout", headers=stateful_headers(client))
     login_response = client.post(
         "/api/v1/auth/login",
         json={"email": "inactive.teacher@example.com", "password": "TeachPass123!"},
@@ -310,14 +300,13 @@ def test_inactive_teacher_cannot_login(client, admin_user):
 
 
 def test_invalid_term_and_semester_validation_fail(client, admin_user):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
-    department_id = create_department(client, admin_headers, name="Validation", code="VAL")
-    course_id = create_course(client, admin_headers, department_id)
+    login(client, "admin@example.com", "AdminPass123!")
+    department_id = create_department(client, name="Validation", code="VAL")
+    course_id = create_course(client, department_id)
 
     invalid_offering = client.post(
         "/api/v1/admin/course-offerings",
-        headers=admin_headers,
+        headers=stateful_headers(client),
         json={
             "course_id": course_id,
             "term": "WINTER",
@@ -330,7 +319,7 @@ def test_invalid_term_and_semester_validation_fail(client, admin_user):
 
     invalid_student = client.post(
         "/api/v1/admin/students",
-        headers=admin_headers,
+        headers=stateful_headers(client),
         json={
             "email": "invalid.student@example.com",
             "temporary_password": "StudPass123!",
@@ -346,11 +335,10 @@ def test_invalid_term_and_semester_validation_fail(client, admin_user):
 
 
 def test_department_delete_blocked_when_active_relations_exist(client, admin_user):
-    admin_token = login(client, "admin@example.com", "AdminPass123!")
-    admin_headers = auth_headers(admin_token)
-    department_id = create_department(client, admin_headers, name="Protected", code="PRT")
+    login(client, "admin@example.com", "AdminPass123!")
+    department_id = create_department(client, name="Protected", code="PRT")
 
-    create_student(client, admin_headers, department_id)
+    create_student(client, department_id)
 
-    delete_response = client.delete(f"/api/v1/admin/departments/{department_id}", headers=admin_headers)
+    delete_response = client.delete(f"/api/v1/admin/departments/{department_id}", headers=stateful_headers(client))
     assert delete_response.status_code == 409

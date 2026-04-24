@@ -1,3 +1,4 @@
+from app.models.auth_session import AuthSession
 from app.models.audit_log import AdminAuditLog
 from app.models.course import Course
 from app.models.department import Department
@@ -14,6 +15,7 @@ __all__ = [
     "Department",
     "Enrollment",
     "AdminAuditLog",
+    "AuthSession",
     "Student",
     "Teacher",
     "User",

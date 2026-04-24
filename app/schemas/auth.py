@@ -3,6 +3,10 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.core.constants import UserRole
 from app.schemas.common import validate_password_strength
 
+EXAMPLE_LOGIN_PASSWORD = "ChangeMe123!"  # nosec B105
+EXAMPLE_CURRENT_PASSWORD = "Teacher123!"  # nosec B105
+EXAMPLE_NEW_PASSWORD = "TeacherNew123!"  # nosec B105
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -12,7 +16,7 @@ class LoginRequest(BaseModel):
         "json_schema_extra": {
             "example": {
                 "email": "admin@example.com",
-                "password": "ChangeMe123!",
+                "password": EXAMPLE_LOGIN_PASSWORD,
             }
         }
     }
@@ -25,8 +29,8 @@ class ChangePasswordRequest(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "current_password": "Teacher123!",
-                "new_password": "TeacherNew123!",
+                "current_password": EXAMPLE_CURRENT_PASSWORD,
+                "new_password": EXAMPLE_NEW_PASSWORD,
             }
         }
     }
@@ -48,8 +52,7 @@ class AuthMeResponse(BaseModel):
     last_name: str | None = None
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class SessionResponse(BaseModel):
     expires_in: int
+    refresh_expires_in: int
     user: AuthMeResponse

@@ -6,7 +6,7 @@ This project is designed as an internship practice backend that demonstrates:
 - API design with FastAPI
 - relational data modeling with PostgreSQL
 - authentication and role-based authorization
-- secure password handling and rate limiting
+- secure cookie-backed session handling, CSRF protection, and rate limiting
 - migrations with Alembic
 - automated testing
 - production-style backend structure
@@ -14,7 +14,7 @@ This project is designed as an internship practice backend that demonstrates:
 ## Core Features
 
 - Admin, teacher, and student roles
-- Bearer JWT authentication
+- short-lived access cookies plus refresh-session rotation
 - Argon2 password hashing
 - forced first-login password change for teacher and student accounts
 - departments, students, teachers, courses, and course offerings
@@ -26,6 +26,8 @@ This project is designed as an internship practice backend that demonstrates:
 - structured error responses
 - request logging with request IDs
 - general API rate limiting plus auth-specific rate limiting
+- CSRF and trusted-origin validation on mutating cookie-authenticated routes
+- Redis-backed rate limiting and token/session security in production
 - admin audit history with structured action metadata
 - frontend dashboard in React + Vite + TypeScript
 - OpenAPI/Swagger docs
@@ -37,6 +39,7 @@ This project is designed as an internship practice backend that demonstrates:
 - FastAPI
 - SQLAlchemy 2.0
 - PostgreSQL
+- Redis
 - Alembic
 - Pydantic Settings
 - PyJWT
@@ -101,6 +104,7 @@ university-management-system/
 
 Main entities:
 - `users`
+- `auth_sessions`
 - `departments`
 - `students`
 - `teachers`
@@ -132,15 +136,21 @@ Important modeling decision:
 
 ## Authentication And Security
 
-- login uses bearer JWT
+- login creates a cookie-backed session instead of returning a bearer token to the SPA
+- access JWTs are short-lived and stored in an `HttpOnly` access cookie
+- refresh sessions are stored in `auth_sessions` and rotated through a longer-lived `HttpOnly` refresh cookie
 - passwords are hashed with Argon2
 - student and teacher accounts are created by admin with a temporary password
 - teacher and student must change password on first login
-- logout invalidates older tokens by incrementing `token_version`
+- `token_version` invalidates all older access tokens after logout/password change style events
+- logout revokes the current refresh session and deny-lists the current access-token `jti`
 - login is rate-limited by IP and by IP+email
 - change-password has a dedicated per-user limiter
+- refresh has its own limiter and refresh-token reuse revokes the current session
+- all mutating cookie-authenticated API routes require a matching `X-CSRF-Token` header and a trusted `Origin`
 - all `/api/v1` routes use general read/write rate limiting except login, which uses dedicated login limiters
 - admin write actions are stored in `admin_audit_logs`
+- production startup fails fast on unsafe defaults such as placeholder secrets, missing Redis, or docs exposed in production
 
 ## Rate Limiting Summary
 
@@ -151,6 +161,10 @@ Important modeling decision:
 `POST /api/v1/auth/change-password`
 - general middleware write limiter
 - dedicated per-user change-password limiter
+
+`POST /api/v1/auth/refresh`
+- general middleware write limiter
+- dedicated refresh limiter
 
 Other `GET /api/v1/...`
 - general middleware read limiter
@@ -181,10 +195,13 @@ Copy-Item .env.example .env
 
 2. Review the important values in `.env`:
 - `DATABASE_URL`
+- `REDIS_URL`
 - `SECRET_KEY`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
-- CORS and rate-limit settings if needed
+- `CORS_ORIGINS`
+- `TRUSTED_ORIGINS`
+- cookie and rate-limit settings if needed
 
 Example defaults:
 
@@ -209,7 +226,7 @@ python -m pip install -e ".[dev]"
 Start PostgreSQL:
 
 ```powershell
-docker compose up -d db
+docker compose up -d db redis
 ```
 
 Apply migrations:
@@ -307,6 +324,12 @@ Run the automated test suite:
 pytest -q
 ```
 
+Run the security verification script:
+
+```powershell
+security-check
+```
+
 Run frontend lint and production build:
 
 ```powershell
@@ -319,8 +342,10 @@ Current tests cover:
 - admin login
 - invalid login rejection
 - first-login password change flow
+- refresh rotation and refresh-token reuse revocation
 - logout/password token invalidation behavior
 - role-based access control
+- CSRF and trusted-origin enforcement on authenticated writes
 - duplicate assignment and enrollment protection
 - soft delete, restore, and restricted hard delete
 - audit log capture
@@ -347,16 +372,18 @@ Recommended order:
 
 ## Swagger Testing Notes
 
-After login:
-- copy the `access_token`
-- click `Authorize` in Swagger
-- enter:
+The API now uses secure cookies instead of bearer tokens in the SPA flow.
 
-```text
-Bearer YOUR_ACCESS_TOKEN
-```
+What works well in Swagger:
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- other same-origin `GET` requests after login
 
-Then call protected endpoints.
+For mutating requests in Swagger/Postman:
+- send the `X-CSRF-Token` header with the value of the `ums_csrf` cookie
+- keep the request `Origin` trusted
+
+For day-to-day testing, the frontend app or Postman is usually more convenient than Swagger for the authenticated write flow.
 
 ## Postman Testing Notes
 
@@ -406,8 +433,11 @@ The frontend lives in `frontend/` and currently includes:
 - audit log timeline using backend `description`
 
 Frontend auth behavior:
-- stores the bearer token in localStorage for the MVP
 - bootstraps current user from `GET /api/v1/auth/me`
+- uses `credentials: "include"` with the backend's cookie session model
+- automatically refreshes expired access sessions through `POST /api/v1/auth/refresh`
+- attaches `X-CSRF-Token` automatically on mutating requests
+- never stores auth tokens in localStorage
 - redirects users by role after login
 - forces `must_change_password` users to `/change-password`
 - uses a Vite proxy by default so local API calls work against `http://127.0.0.1:8000`
@@ -416,9 +446,9 @@ Frontend auth behavior:
 
 - backend-first MVP
 - single campus only
-- bearer JWT, not cookie auth
-- no CSRF because cookie auth is not used
-- no refresh tokens in MVP
+- cookie-backed access + refresh session auth for the SPA
+- CSRF is required for mutating authenticated requests
+- Redis is required for the hardened production profile and optional in local development
 - no attendance, grades, uploads, or notifications in MVP
 - course offerings use allowed terms: `SPRING`, `SUMMER`, `FALL`
 
@@ -437,4 +467,4 @@ Frontend auth behavior:
 - richer audit log filtering and dashboard views
 - stronger OpenAPI examples for every endpoint
 - broader edge-case test coverage
-- optional refresh token flow if the project later needs long-lived browser sessions
+- optional TOTP/Google Authenticator 2FA layered onto the session flow

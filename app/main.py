@@ -11,6 +11,7 @@ configure_logging()
 
 
 def create_app() -> FastAPI:
+    settings.validate_runtime_security()
     app = FastAPI(
         title=settings.app_name,
         debug=settings.debug,
@@ -30,4 +31,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

@@ -1,7 +1,9 @@
-import { clearAccessToken, getAccessToken } from "@/lib/auth/storage";
 import type { ApiErrorEnvelope } from "@/lib/api/types";
+import { getCsrfToken } from "@/lib/auth/cookies";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ?? "";
+const REFRESH_PATH = "/api/v1/auth/refresh";
+const LOGIN_PATH = "/api/v1/auth/login";
 
 export class ApiError extends Error {
   status: number;
@@ -37,6 +39,14 @@ function dispatchAuthEvent(type: "ums:unauthorized" | "ums:password-change-requi
   window.dispatchEvent(new CustomEvent(type));
 }
 
+function shouldAttachCsrfToken(method: string) {
+  return method !== "GET" && method !== "HEAD";
+}
+
+function shouldAttemptRefresh(path: string) {
+  return path !== LOGIN_PATH && path !== REFRESH_PATH;
+}
+
 function toApiError(status: number, payload: ApiErrorEnvelope | null, fallbackMessage: string) {
   return new ApiError(
     status,
@@ -47,35 +57,86 @@ function toApiError(status: number, payload: ApiErrorEnvelope | null, fallbackMe
   );
 }
 
-export async function apiFetch<T>(
+async function parseResponsePayload<T>(response: Response) {
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
+  return isJson ? ((await response.json()) as T | ApiErrorEnvelope) : null;
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshSession() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const headers = new Headers();
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers.set("X-CSRF-Token", csrfToken);
+    }
+
+    try {
+      const response = await fetch(buildUrl(REFRESH_PATH), {
+        method: "POST",
+        headers,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        dispatchAuthEvent("ums:unauthorized");
+        return false;
+      }
+      return true;
+    } catch {
+      dispatchAuthEvent("ums:unauthorized");
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+async function apiFetchInternal<T>(
   path: string,
   init: RequestInit = {},
   query?: Record<string, QueryValue>,
+  allowRefresh = true,
 ): Promise<T> {
   const headers = new Headers(init.headers);
-  const token = getAccessToken();
-  if (!headers.has("Content-Type") && init.body) {
+  const method = (init.method ?? "GET").toUpperCase();
+  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+  if (shouldAttachCsrfToken(method) && !headers.has("X-CSRF-Token")) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers.set("X-CSRF-Token", csrfToken);
+    }
   }
 
   const response = await fetch(buildUrl(path, query), {
     ...init,
     headers,
+    credentials: "include",
   });
 
-  const contentType = response.headers.get("content-type");
-  const isJson = contentType?.includes("application/json");
-  const payload = isJson ? ((await response.json()) as T | ApiErrorEnvelope) : null;
+  if (response.status === 401 && allowRefresh && shouldAttemptRefresh(path)) {
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      return apiFetchInternal<T>(path, init, query, false);
+    }
+  }
+
+  const payload = await parseResponsePayload<T>(response);
 
   if (!response.ok) {
     const apiPayload = payload as ApiErrorEnvelope | null;
     const error = toApiError(response.status, apiPayload, "Request failed.");
 
     if (response.status === 401) {
-      clearAccessToken();
       dispatchAuthEvent("ums:unauthorized");
     } else if (error.code === "PASSWORD_CHANGE_REQUIRED") {
       dispatchAuthEvent("ums:password-change-required");
@@ -85,4 +146,12 @@ export async function apiFetch<T>(
   }
 
   return payload as T;
+}
+
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+  query?: Record<string, QueryValue>,
+): Promise<T> {
+  return apiFetchInternal<T>(path, init, query);
 }

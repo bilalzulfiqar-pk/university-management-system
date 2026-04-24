@@ -47,10 +47,9 @@ export interface AuthUser {
   last_name: string | null;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
+export interface SessionResponse {
   expires_in: number;
+  refresh_expires_in: number;
   user: AuthUser;
 }
 

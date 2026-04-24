@@ -11,6 +11,8 @@ from app.schemas.common import (
     validate_password_strength,
 )
 
+EXAMPLE_TEACHER_TEMP_PASSWORD = "Teacher123!"  # nosec B105
+
 
 class TeacherCreate(BaseModel):
     email: EmailStr
@@ -25,7 +27,7 @@ class TeacherCreate(BaseModel):
         "json_schema_extra": {
             "example": {
                 "email": "teacher1@example.com",
-                "temporary_password": "Teacher123!",
+                "temporary_password": EXAMPLE_TEACHER_TEMP_PASSWORD,
                 "first_name": "Sara",
                 "last_name": "Khan",
                 "employee_id": "EMP-001",

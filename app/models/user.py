@@ -24,4 +24,4 @@ class User(PrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
 
     student = relationship("Student", back_populates="user", uselist=False)
     teacher = relationship("Teacher", back_populates="user", uselist=False)
-
+    auth_sessions = relationship("AuthSession", back_populates="user")

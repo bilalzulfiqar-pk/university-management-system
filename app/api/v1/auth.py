@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 
 from app.api.deps import CurrentUser, SessionDep
-from app.schemas.auth import AuthMeResponse, ChangePasswordRequest, LoginRequest, TokenResponse
+from app.schemas.auth import AuthMeResponse, ChangePasswordRequest, LoginRequest, SessionResponse
 from app.schemas.common import MessageResponse
 from app.services.auth import AuthService
 
@@ -11,22 +11,32 @@ router = APIRouter()
 
 @router.post(
     "/login",
-    response_model=TokenResponse,
+    response_model=SessionResponse,
     summary="Login user",
-    description="Authenticate with email and password and return a bearer access token.",
+    description="Authenticate with email and password and establish a secure cookie-backed session.",
 )
-def login(payload: LoginRequest, request: Request, db: SessionDep) -> TokenResponse:
-    return AuthService(db).login(request, payload)
+def login(payload: LoginRequest, request: Request, response: Response, db: SessionDep) -> SessionResponse:
+    return AuthService(db).login(request, response, payload)
+
+
+@router.post(
+    "/refresh",
+    response_model=SessionResponse,
+    summary="Refresh current session",
+    description="Rotate the refresh session and renew access cookies using the active refresh cookie.",
+)
+def refresh(request: Request, response: Response, db: SessionDep) -> SessionResponse:
+    return AuthService(db).refresh(request, response)
 
 
 @router.post(
     "/logout",
     response_model=MessageResponse,
     summary="Logout current user",
-    description="Invalidate the current token by incrementing token version for the authenticated user.",
+    description="Revoke the current session and clear authentication cookies.",
 )
-def logout(db: SessionDep, user: CurrentUser) -> MessageResponse:
-    result = AuthService(db).logout(user)
+def logout(request: Request, response: Response, db: SessionDep, user: CurrentUser) -> MessageResponse:
+    result = AuthService(db).logout(request, response, user)
     return MessageResponse(**result)
 
 
@@ -38,10 +48,12 @@ def logout(db: SessionDep, user: CurrentUser) -> MessageResponse:
 )
 def change_password(
     payload: ChangePasswordRequest,
+    request: Request,
+    response: Response,
     db: SessionDep,
     user: CurrentUser,
 ) -> MessageResponse:
-    result = AuthService(db).change_password(user, payload)
+    result = AuthService(db).change_password(request, response, user, payload)
     return MessageResponse(**result)
 
 

@@ -2,32 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AuthContext } from "@/app/providers/auth-context";
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { AuthUser, LoginPayload, TokenResponse } from "@/lib/api/types";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth/storage";
+import type { AuthUser, LoginPayload, SessionResponse } from "@/lib/api/types";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => getAccessToken());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
 
   const clearSession = useCallback(() => {
-    clearAccessToken();
-    setToken(null);
     setUser(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const activeToken = getAccessToken();
-    if (!activeToken) {
-      setUser(null);
-      setBootstrapping(false);
-      return null;
-    }
-
     try {
       const me = await apiFetch<AuthUser>("/api/v1/auth/me");
       setUser(me);
-      setToken(activeToken);
       return me;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -66,21 +54,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearSession]);
 
   const login = useCallback(async (payload: LoginPayload) => {
-    const result = await apiFetch<TokenResponse>("/api/v1/auth/login", {
+    const result = await apiFetch<SessionResponse>("/api/v1/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    setAccessToken(result.access_token);
-    setToken(result.access_token);
     setUser(result.user);
     return result;
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      if (getAccessToken()) {
-        await apiFetch("/api/v1/auth/logout", { method: "POST" });
-      }
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
     } catch {
       // ignore logout request failures and clear client state anyway
     } finally {
@@ -96,15 +80,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(
     () => ({
       user,
-      token,
       bootstrapping,
-      isAuthenticated: Boolean(token && user),
+      isAuthenticated: Boolean(user),
       login,
       logout,
       refreshUser,
       setMustChangePassword,
     }),
-    [bootstrapping, login, logout, refreshUser, setMustChangePassword, token, user],
+    [bootstrapping, login, logout, refreshUser, setMustChangePassword, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

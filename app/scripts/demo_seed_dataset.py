@@ -9,7 +9,7 @@ departments and seeded offerings.
 
 from __future__ import annotations
 
-TEMP_ACCOUNT_PASSWORD = "Welcome123!"
+TEMP_ACCOUNT_PASSWORD = "Welcome123!"  # nosec B105
 
 PROGRAMS = [
     {
