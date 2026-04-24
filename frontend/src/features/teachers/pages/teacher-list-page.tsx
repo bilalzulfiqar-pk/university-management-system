@@ -25,7 +25,7 @@ export function TeacherListPage() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [departmentId, setDepartmentId] = useState<number | undefined>();
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "ARCHIVED" | "ALL">("ACTIVE");
   const [offset, setOffset] = useState(0);
   const [dialogState, setDialogState] = useState<{ mode: "archive" | "hard-delete" | "restore"; teacher: TeacherRead } | null>(
     null,
@@ -37,12 +37,12 @@ export function TeacherListPage() {
   });
 
   const teachersQuery = useQuery({
-    queryKey: ["teachers", appliedSearch, departmentId, includeDeleted, offset],
+    queryKey: ["teachers", appliedSearch, departmentId, statusFilter, offset],
     queryFn: () =>
       listTeachers({
         search: appliedSearch,
         department_id: departmentId,
-        include_deleted: includeDeleted,
+        include_deleted: statusFilter !== "ACTIVE",
         limit: 10,
         offset,
       }),
@@ -86,12 +86,19 @@ export function TeacherListPage() {
   if (teachersQuery.isLoading || departmentsQuery.isLoading) return <LoadingScreen label="Loading teachers..." />;
   if (teachersQuery.isError || !teachersQuery.data) return <ErrorState description="Teachers could not be loaded." onRetry={() => teachersQuery.refetch()} />;
 
+  const visibleTeachers =
+    statusFilter === "ARCHIVED"
+      ? teachersQuery.data.items.filter((teacher) => Boolean(teacher.deleted_at))
+      : statusFilter === "ALL"
+        ? teachersQuery.data.items
+        : teachersQuery.data.items.filter((teacher) => !teacher.deleted_at);
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Admin module"
         title="Teachers"
-        description="Provision teacher accounts, keep departments aligned, and manage archive/restore flows safely."
+        description="Provision teacher accounts, keep departments aligned, and manage archive or restore flows safely."
         actions={
           <Button asChild>
             <Link to="/admin/teachers/new">Add teacher</Link>
@@ -122,13 +129,27 @@ export function TeacherListPage() {
           </Button>
         </form>
 
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <input type="checkbox" checked={includeDeleted} onChange={(event) => setIncludeDeleted(event.target.checked)} />
-          Include archived teachers
-        </label>
+        <div className="flex flex-col gap-3 rounded-[16px] border border-slate-200 bg-slate-50/80 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-ink-950">Record visibility</p>
+            <p className="text-sm text-slate-700">Archived teachers stay manageable here so restore and hard-delete actions are easy to find.</p>
+          </div>
+          <Select className="lg:max-w-[220px]" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ACTIVE" | "ARCHIVED" | "ALL")}>
+            <option value="ACTIVE">Active only</option>
+            <option value="ARCHIVED">Archived only</option>
+            <option value="ALL">All records</option>
+          </Select>
+        </div>
 
-        {teachersQuery.data.items.length === 0 ? (
-          <EmptyState title="No teachers found" description="Create the first teacher account or widen the current filters." />
+        {visibleTeachers.length === 0 ? (
+          <EmptyState
+            title="No teachers found"
+            description={
+              statusFilter === "ARCHIVED"
+                ? "No archived teachers match the current filters."
+                : "Create the first teacher account or widen the current filters."
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto rounded-[16px] border border-slate-200">
@@ -145,7 +166,7 @@ export function TeacherListPage() {
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {teachersQuery.data.items.map((teacher) => (
+                  {visibleTeachers.map((teacher) => (
                     <tr key={teacher.id}>
                       <Td className="font-semibold">{fullName(teacher.first_name, teacher.last_name)}</Td>
                       <Td>{teacher.employee_id}</Td>
@@ -155,8 +176,8 @@ export function TeacherListPage() {
                         <StatusPill archived={Boolean(teacher.deleted_at)} active={teacher.is_active} />
                       </Td>
                       <Td>{formatDate(teacher.updated_at)}</Td>
-                      <Td className="text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
+                      <Td className="min-w-[250px] text-right">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           <Button variant="secondary" size="sm" asChild>
                             <Link to={`/admin/teachers/${teacher.id}/edit`}>Edit</Link>
                           </Button>

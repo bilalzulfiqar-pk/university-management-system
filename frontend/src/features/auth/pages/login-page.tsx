@@ -36,7 +36,7 @@ export function LoginPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       email: "admin@example.com",
-      password: "ChangeMe123!",
+      password: "ChangeMe123!!",
     },
   });
 

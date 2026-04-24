@@ -11,6 +11,7 @@ import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { StatusPill } from "@/components/common/status-pill";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -24,7 +25,7 @@ export function CourseListPage() {
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [departmentId, setDepartmentId] = useState<number | undefined>();
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "ARCHIVED" | "ALL">("ACTIVE");
   const [offset, setOffset] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -34,12 +35,12 @@ export function CourseListPage() {
   });
 
   const coursesQuery = useQuery({
-    queryKey: ["courses", appliedSearch, departmentId, includeDeleted, offset],
+    queryKey: ["courses", appliedSearch, departmentId, statusFilter, offset],
     queryFn: () =>
       listCourses({
         search: appliedSearch,
         department_id: departmentId,
-        include_deleted: includeDeleted,
+        include_deleted: statusFilter !== "ACTIVE",
         limit: 10,
         offset,
       }),
@@ -62,6 +63,13 @@ export function CourseListPage() {
 
   if (coursesQuery.isLoading || departmentsQuery.isLoading) return <LoadingScreen label="Loading courses..." />;
   if (coursesQuery.isError || !coursesQuery.data) return <ErrorState description="Courses could not be loaded." onRetry={() => coursesQuery.refetch()} />;
+
+  const visibleCourses =
+    statusFilter === "ARCHIVED"
+      ? coursesQuery.data.items.filter((course) => Boolean(course.deleted_at))
+      : statusFilter === "ALL"
+        ? coursesQuery.data.items
+        : coursesQuery.data.items.filter((course) => !course.deleted_at);
 
   const selectedCourse = coursesQuery.data.items.find((course) => course.id === selectedId) ?? null;
 
@@ -101,13 +109,29 @@ export function CourseListPage() {
           </Button>
         </form>
 
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <input type="checkbox" checked={includeDeleted} onChange={(event) => setIncludeDeleted(event.target.checked)} />
-          Include archived courses
-        </label>
+        <div className="flex flex-col gap-3 rounded-[16px] border border-slate-200 bg-slate-50/80 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-ink-950">Record visibility</p>
+            <p className="text-sm text-slate-700">
+              Courses are soft-delete only in this MVP. Archived records can be reviewed here, but restore is not available from the backend yet.
+            </p>
+          </div>
+          <Select className="lg:max-w-[220px]" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ACTIVE" | "ARCHIVED" | "ALL")}>
+            <option value="ACTIVE">Active only</option>
+            <option value="ARCHIVED">Archived only</option>
+            <option value="ALL">All records</option>
+          </Select>
+        </div>
 
-        {coursesQuery.data.items.length === 0 ? (
-          <EmptyState title="No courses found" description="Create a course to start building real term-based offerings." />
+        {visibleCourses.length === 0 ? (
+          <EmptyState
+            title="No courses found"
+            description={
+              statusFilter === "ARCHIVED"
+                ? "No archived courses match the current filters."
+                : "Create a course to start building real term-based offerings."
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto rounded-[16px] border border-slate-200">
@@ -124,7 +148,7 @@ export function CourseListPage() {
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {coursesQuery.data.items.map((course) => (
+                  {visibleCourses.map((course) => (
                     <tr key={course.id}>
                       <Td className="font-semibold">{course.code}</Td>
                       <Td>{course.name}</Td>
@@ -134,8 +158,8 @@ export function CourseListPage() {
                         <StatusPill archived={Boolean(course.deleted_at)} />
                       </Td>
                       <Td>{formatDate(course.updated_at)}</Td>
-                      <Td className="text-right">
-                        <div className="flex justify-end gap-2">
+                      <Td className="min-w-[240px] text-right">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           <Button variant="secondary" size="sm" asChild>
                             <Link to={`/admin/courses/${course.id}/edit`}>Edit</Link>
                           </Button>
@@ -143,7 +167,9 @@ export function CourseListPage() {
                             <Button variant="danger" size="sm" onClick={() => setSelectedId(course.id)}>
                               Archive
                             </Button>
-                          ) : null}
+                          ) : (
+                            <Badge variant="warning">Soft-delete only</Badge>
+                          )}
                         </div>
                       </Td>
                     </tr>

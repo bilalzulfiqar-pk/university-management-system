@@ -12,6 +12,7 @@ import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { StatusPill } from "@/components/common/status-pill";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -27,7 +28,7 @@ export function OfferingListPage() {
   const [courseId, setCourseId] = useState<number | undefined>();
   const [term, setTerm] = useState<string | undefined>();
   const [year, setYear] = useState<number | undefined>();
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "ARCHIVED" | "ALL">("ACTIVE");
   const [offset, setOffset] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -37,21 +38,21 @@ export function OfferingListPage() {
   });
 
   const offeringsQuery = useQuery({
-    queryKey: ["offerings", appliedSearch, courseId, term, year, includeDeleted, offset],
+    queryKey: ["offerings", appliedSearch, courseId, term, year, statusFilter, offset],
     queryFn: () =>
       listOfferings({
         search: appliedSearch,
         course_id: courseId,
         term,
         year,
-        include_deleted: includeDeleted,
+        include_deleted: statusFilter !== "ACTIVE",
         limit: 10,
         offset,
       }),
   });
 
   const coursesById = useMemo(
-    () => new Map((coursesQuery.data?.items ?? []).map((course) => [course.id, `${course.code} — ${course.name}`])),
+    () => new Map((coursesQuery.data?.items ?? []).map((course) => [course.id, `${course.code} - ${course.name}`])),
     [coursesQuery.data],
   );
 
@@ -66,7 +67,16 @@ export function OfferingListPage() {
   });
 
   if (coursesQuery.isLoading || offeringsQuery.isLoading) return <LoadingScreen label="Loading course offerings..." />;
-  if (coursesQuery.isError || offeringsQuery.isError || !offeringsQuery.data) return <ErrorState description="Course offerings could not be loaded." onRetry={() => offeringsQuery.refetch()} />;
+  if (coursesQuery.isError || offeringsQuery.isError || !offeringsQuery.data) {
+    return <ErrorState description="Course offerings could not be loaded." onRetry={() => offeringsQuery.refetch()} />;
+  }
+
+  const visibleOfferings =
+    statusFilter === "ARCHIVED"
+      ? offeringsQuery.data.items.filter((offering) => Boolean(offering.deleted_at))
+      : statusFilter === "ALL"
+        ? offeringsQuery.data.items
+        : offeringsQuery.data.items.filter((offering) => !offering.deleted_at);
 
   const selectedOffering = offeringsQuery.data.items.find((offering) => offering.id === selectedId) ?? null;
 
@@ -97,7 +107,7 @@ export function OfferingListPage() {
             <option value="">All courses</option>
             {coursesQuery.data?.items.map((course) => (
               <option key={course.id} value={course.id}>
-                {course.code} — {course.name}
+                {course.code} - {course.name}
               </option>
             ))}
           </Select>
@@ -122,13 +132,29 @@ export function OfferingListPage() {
           </Button>
         </form>
 
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <input type="checkbox" checked={includeDeleted} onChange={(event) => setIncludeDeleted(event.target.checked)} />
-          Include archived offerings
-        </label>
+        <div className="flex flex-col gap-3 rounded-[16px] border border-slate-200 bg-slate-50/80 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-ink-950">Record visibility</p>
+            <p className="text-sm text-slate-700">
+              Offerings are soft-delete only in this MVP. You can review archived offerings here, but restore is not available from the backend yet.
+            </p>
+          </div>
+          <Select className="lg:max-w-[220px]" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ACTIVE" | "ARCHIVED" | "ALL")}>
+            <option value="ACTIVE">Active only</option>
+            <option value="ARCHIVED">Archived only</option>
+            <option value="ALL">All records</option>
+          </Select>
+        </div>
 
-        {offeringsQuery.data.items.length === 0 ? (
-          <EmptyState title="No offerings found" description="Create the first course offering to start assignments and enrollments." />
+        {visibleOfferings.length === 0 ? (
+          <EmptyState
+            title="No offerings found"
+            description={
+              statusFilter === "ARCHIVED"
+                ? "No archived offerings match the current filters."
+                : "Create the first course offering to start assignments and enrollments."
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto rounded-[16px] border border-slate-200">
@@ -147,22 +173,22 @@ export function OfferingListPage() {
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {offeringsQuery.data.items.map((offering) => (
+                  {visibleOfferings.map((offering) => (
                     <tr key={offering.id}>
-                      <Td className="font-semibold">{coursesById.get(offering.course_id) ?? `${offering.course_code} — ${offering.course_name}`}</Td>
+                      <Td className="font-semibold">{coursesById.get(offering.course_id) ?? `${offering.course_code} - ${offering.course_name}`}</Td>
                       <Td>
                         {formatTerm(offering.term)} {offering.year}
                       </Td>
                       <Td>{offering.section}</Td>
-                      <Td>{offering.capacity ?? "—"}</Td>
+                      <Td>{offering.capacity ?? "-"}</Td>
                       <Td>{offering.teacher_ids.length}</Td>
                       <Td>{offering.student_count}</Td>
                       <Td>
                         <StatusPill archived={Boolean(offering.deleted_at)} />
                       </Td>
                       <Td>{formatDate(offering.updated_at)}</Td>
-                      <Td className="text-right">
-                        <div className="flex flex-wrap justify-end gap-2">
+                      <Td className="min-w-[250px] text-right">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           <Button variant="secondary" size="sm" asChild>
                             <Link to={`/admin/course-offerings/${offering.id}`}>Open</Link>
                           </Button>
@@ -173,7 +199,9 @@ export function OfferingListPage() {
                             <Button variant="danger" size="sm" onClick={() => setSelectedId(offering.id)}>
                               Archive
                             </Button>
-                          ) : null}
+                          ) : (
+                            <Badge variant="warning">Soft-delete only</Badge>
+                          )}
                         </div>
                       </Td>
                     </tr>

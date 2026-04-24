@@ -10,10 +10,12 @@ import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { StatusPill } from "@/components/common/status-pill";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableHead, Td, Th } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils/format";
 
@@ -21,13 +23,13 @@ export function DepartmentListPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "ARCHIVED" | "ALL">("ACTIVE");
   const [offset, setOffset] = useState(0);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | null>(null);
 
   const query = useQuery({
-    queryKey: ["departments", appliedSearch, includeDeleted, offset],
-    queryFn: () => listDepartments({ search: appliedSearch, include_deleted: includeDeleted, limit: 10, offset }),
+    queryKey: ["departments", appliedSearch, statusFilter, offset],
+    queryFn: () => listDepartments({ search: appliedSearch, include_deleted: statusFilter !== "ACTIVE", limit: 10, offset }),
   });
 
   const archiveMutation = useMutation({
@@ -40,10 +42,17 @@ export function DepartmentListPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "Department archive failed."),
   });
 
-  const selectedDepartment = query.data?.items.find((item) => item.id === selectedDepartmentId) ?? null;
-
   if (query.isLoading) return <LoadingScreen label="Loading departments..." />;
   if (query.isError || !query.data) return <ErrorState description="Departments could not be loaded." onRetry={() => query.refetch()} />;
+
+  const visibleDepartments =
+    statusFilter === "ARCHIVED"
+      ? query.data.items.filter((department) => Boolean(department.deleted_at))
+      : statusFilter === "ALL"
+        ? query.data.items
+        : query.data.items.filter((department) => !department.deleted_at);
+
+  const selectedDepartment = query.data.items.find((item) => item.id === selectedDepartmentId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -73,14 +82,29 @@ export function DepartmentListPage() {
               Apply filters
             </Button>
           </form>
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-            <input type="checkbox" checked={includeDeleted} onChange={(event) => setIncludeDeleted(event.target.checked)} />
-            Include archived
-          </label>
+          <Select className="lg:max-w-[220px]" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ACTIVE" | "ARCHIVED" | "ALL")}>
+            <option value="ACTIVE">Active only</option>
+            <option value="ARCHIVED">Archived only</option>
+            <option value="ALL">All records</option>
+          </Select>
         </div>
 
-        {query.data.items.length === 0 ? (
-          <EmptyState title="No departments found" description="Create your first department to begin organizing students, teachers, and courses." />
+        <div className="rounded-[16px] border border-slate-200 bg-slate-50/80 p-4">
+          <p className="text-sm font-semibold text-ink-950">Archived department behavior</p>
+          <p className="mt-1 text-sm text-slate-700">
+            Departments are soft-delete only in this MVP. Archived departments can be reviewed here, but restore is not available from the backend yet.
+          </p>
+        </div>
+
+        {visibleDepartments.length === 0 ? (
+          <EmptyState
+            title="No departments found"
+            description={
+              statusFilter === "ARCHIVED"
+                ? "No archived departments match the current filters."
+                : "Create your first department to begin organizing students, teachers, and courses."
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto rounded-[16px] border border-slate-200">
@@ -95,7 +119,7 @@ export function DepartmentListPage() {
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {query.data.items.map((department) => (
+                  {visibleDepartments.map((department) => (
                     <tr key={department.id}>
                       <Td className="font-semibold">{department.name}</Td>
                       <Td>{department.code}</Td>
@@ -103,8 +127,8 @@ export function DepartmentListPage() {
                         <StatusPill archived={Boolean(department.deleted_at)} />
                       </Td>
                       <Td>{formatDate(department.updated_at)}</Td>
-                      <Td className="text-right">
-                        <div className="flex justify-end gap-2">
+                      <Td className="min-w-[240px] text-right">
+                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
                           <Button variant="secondary" size="sm" asChild>
                             <Link to={`/admin/departments/${department.id}/edit`}>Edit</Link>
                           </Button>
@@ -112,7 +136,9 @@ export function DepartmentListPage() {
                             <Button variant="danger" size="sm" onClick={() => setSelectedDepartmentId(department.id)}>
                               Archive
                             </Button>
-                          ) : null}
+                          ) : (
+                            <Badge variant="warning">Soft-delete only</Badge>
+                          )}
                         </div>
                       </Td>
                     </tr>
