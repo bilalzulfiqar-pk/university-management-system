@@ -67,8 +67,8 @@ export function LoginPage() {
         <div className="space-y-2">
           <h2 className="text-3xl font-semibold tracking-tight text-ink-950">Sign in to your workspace</h2>
           <p className="text-sm leading-6 text-slate-700">
-            Use the account seeded from your backend. Students and teachers created by an admin will be asked to change
-            their password on first login.
+            Use your assigned account to sign in. If this is your first login, you will be asked to change your
+            password.
           </p>
         </div>
       </div>

@@ -8,11 +8,10 @@ export function AuthLayout() {
         <div className="hidden max-w-xl flex-1 space-y-6 pr-12 lg:block">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-ink-700">University Management System</p>
           <h1 className="text-5xl font-semibold leading-tight text-ink-950">
-            Calm, clear operations for admins, teachers, and students.
+            Clear workflows for university admins, teachers, and students.
           </h1>
           <p className="max-w-lg text-base leading-7 text-slate-700">
-            This dashboard turns the backend you built into a real working academic workspace with role-aware
-            navigation, predictable forms, and secure day-to-day flows.
+            Manage courses, users, and academic workflows in one secure, role-based workspace.
           </p>
         </div>
         <div className="w-full lg:max-w-lg">
