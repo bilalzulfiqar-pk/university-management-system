@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Header, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -98,3 +98,16 @@ def require_role(*roles: UserRole) -> Callable[[CurrentUser], User]:
 AdminUser = Annotated[User, Depends(require_role(UserRole.ADMIN))]
 TeacherUser = Annotated[User, Depends(require_role(UserRole.TEACHER))]
 StudentUser = Annotated[User, Depends(require_role(UserRole.STUDENT))]
+
+
+CsrfHeader = Annotated[
+    str | None,
+    Header(
+        alias="X-CSRF-Token",
+        description="Required for authenticated POST/PATCH/DELETE requests. Use the value of the csrf cookie for same-origin requests.",
+    ),
+]
+
+
+def document_csrf_header(csrf_token: CsrfHeader = None) -> None:
+    del csrf_token

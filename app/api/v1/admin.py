@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.api.deps import SessionDep, require_role
+from app.api.deps import SessionDep, document_csrf_header, require_role
 from app.core.audit import set_audit_context
 from app.core.constants import AcademicTerm, UserRole
 from app.schemas.common import MessageResponse, Page
@@ -59,7 +59,12 @@ def list_audit_logs(
     )
 
 
-@router.post("/departments", response_model=DepartmentRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/departments",
+    response_model=DepartmentRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(document_csrf_header)],
+)
 def create_department(payload: DepartmentCreate, db: SessionDep, request: Request) -> DepartmentRead:
     department = DepartmentAdminService(db).create(payload)
     set_audit_context(
@@ -78,7 +83,7 @@ def get_department(department_id: int, db: SessionDep, include_deleted: bool = F
     return DepartmentAdminService(db).get(department_id, include_deleted=include_deleted)
 
 
-@router.patch("/departments/{department_id}", response_model=DepartmentRead)
+@router.patch("/departments/{department_id}", response_model=DepartmentRead, dependencies=[Depends(document_csrf_header)])
 def update_department(department_id: int, payload: DepartmentUpdate, db: SessionDep, request: Request) -> DepartmentRead:
     department = DepartmentAdminService(db).update(department_id, payload)
     set_audit_context(
@@ -92,7 +97,7 @@ def update_department(department_id: int, payload: DepartmentUpdate, db: Session
     return department
 
 
-@router.delete("/departments/{department_id}", response_model=MessageResponse)
+@router.delete("/departments/{department_id}", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def delete_department(department_id: int, db: SessionDep, request: Request) -> MessageResponse:
     department = DepartmentAdminService(db).get(department_id)
     result = DepartmentAdminService(db).soft_delete(department_id)
@@ -127,7 +132,12 @@ def list_students(
     )
 
 
-@router.post("/students", response_model=StudentRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/students",
+    response_model=StudentRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(document_csrf_header)],
+)
 def create_student(payload: StudentCreate, db: SessionDep, request: Request) -> StudentRead:
     student = StudentAdminService(db).create(payload)
     set_audit_context(
@@ -146,7 +156,7 @@ def get_student(student_id: int, db: SessionDep, include_deleted: bool = False) 
     return StudentAdminService(db).get(student_id, include_deleted=include_deleted)
 
 
-@router.patch("/students/{student_id}", response_model=StudentRead)
+@router.patch("/students/{student_id}", response_model=StudentRead, dependencies=[Depends(document_csrf_header)])
 def update_student(student_id: int, payload: StudentUpdate, db: SessionDep, request: Request) -> StudentRead:
     student = StudentAdminService(db).update(student_id, payload)
     set_audit_context(
@@ -160,7 +170,7 @@ def update_student(student_id: int, payload: StudentUpdate, db: SessionDep, requ
     return student
 
 
-@router.delete("/students/{student_id}", response_model=MessageResponse)
+@router.delete("/students/{student_id}", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def delete_student(student_id: int, db: SessionDep, request: Request) -> MessageResponse:
     student = StudentAdminService(db).get(student_id, include_deleted=True)
     result = StudentAdminService(db).soft_delete(student_id)
@@ -175,7 +185,7 @@ def delete_student(student_id: int, db: SessionDep, request: Request) -> Message
     return MessageResponse(**result)
 
 
-@router.post("/students/{student_id}/restore", response_model=StudentRead)
+@router.post("/students/{student_id}/restore", response_model=StudentRead, dependencies=[Depends(document_csrf_header)])
 def restore_student(student_id: int, db: SessionDep, request: Request) -> StudentRead:
     student = StudentAdminService(db).restore(student_id)
     set_audit_context(
@@ -189,7 +199,7 @@ def restore_student(student_id: int, db: SessionDep, request: Request) -> Studen
     return student
 
 
-@router.delete("/students/{student_id}/hard", response_model=MessageResponse)
+@router.delete("/students/{student_id}/hard", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def hard_delete_student(student_id: int, db: SessionDep, request: Request) -> MessageResponse:
     student = StudentAdminService(db).get(student_id, include_deleted=True)
     result = StudentAdminService(db).hard_delete(student_id)
@@ -222,7 +232,12 @@ def list_teachers(
     )
 
 
-@router.post("/teachers", response_model=TeacherRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/teachers",
+    response_model=TeacherRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(document_csrf_header)],
+)
 def create_teacher(payload: TeacherCreate, db: SessionDep, request: Request) -> TeacherRead:
     teacher = TeacherAdminService(db).create(payload)
     set_audit_context(
@@ -241,7 +256,7 @@ def get_teacher(teacher_id: int, db: SessionDep, include_deleted: bool = False) 
     return TeacherAdminService(db).get(teacher_id, include_deleted=include_deleted)
 
 
-@router.patch("/teachers/{teacher_id}", response_model=TeacherRead)
+@router.patch("/teachers/{teacher_id}", response_model=TeacherRead, dependencies=[Depends(document_csrf_header)])
 def update_teacher(teacher_id: int, payload: TeacherUpdate, db: SessionDep, request: Request) -> TeacherRead:
     teacher = TeacherAdminService(db).update(teacher_id, payload)
     set_audit_context(
@@ -255,7 +270,7 @@ def update_teacher(teacher_id: int, payload: TeacherUpdate, db: SessionDep, requ
     return teacher
 
 
-@router.delete("/teachers/{teacher_id}", response_model=MessageResponse)
+@router.delete("/teachers/{teacher_id}", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def delete_teacher(teacher_id: int, db: SessionDep, request: Request) -> MessageResponse:
     teacher = TeacherAdminService(db).get(teacher_id, include_deleted=True)
     result = TeacherAdminService(db).soft_delete(teacher_id)
@@ -270,7 +285,7 @@ def delete_teacher(teacher_id: int, db: SessionDep, request: Request) -> Message
     return MessageResponse(**result)
 
 
-@router.post("/teachers/{teacher_id}/restore", response_model=TeacherRead)
+@router.post("/teachers/{teacher_id}/restore", response_model=TeacherRead, dependencies=[Depends(document_csrf_header)])
 def restore_teacher(teacher_id: int, db: SessionDep, request: Request) -> TeacherRead:
     teacher = TeacherAdminService(db).restore(teacher_id)
     set_audit_context(
@@ -284,7 +299,7 @@ def restore_teacher(teacher_id: int, db: SessionDep, request: Request) -> Teache
     return teacher
 
 
-@router.delete("/teachers/{teacher_id}/hard", response_model=MessageResponse)
+@router.delete("/teachers/{teacher_id}/hard", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def hard_delete_teacher(teacher_id: int, db: SessionDep, request: Request) -> MessageResponse:
     teacher = TeacherAdminService(db).get(teacher_id, include_deleted=True)
     result = TeacherAdminService(db).hard_delete(teacher_id)
@@ -317,7 +332,12 @@ def list_courses(
     )
 
 
-@router.post("/courses", response_model=CourseRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/courses",
+    response_model=CourseRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(document_csrf_header)],
+)
 def create_course(payload: CourseCreate, db: SessionDep, request: Request) -> CourseRead:
     course = CourseAdminService(db).create(payload)
     set_audit_context(
@@ -336,7 +356,7 @@ def get_course(course_id: int, db: SessionDep, include_deleted: bool = False) ->
     return CourseAdminService(db).get(course_id, include_deleted=include_deleted)
 
 
-@router.patch("/courses/{course_id}", response_model=CourseRead)
+@router.patch("/courses/{course_id}", response_model=CourseRead, dependencies=[Depends(document_csrf_header)])
 def update_course(course_id: int, payload: CourseUpdate, db: SessionDep, request: Request) -> CourseRead:
     course = CourseAdminService(db).update(course_id, payload)
     set_audit_context(
@@ -350,7 +370,7 @@ def update_course(course_id: int, payload: CourseUpdate, db: SessionDep, request
     return course
 
 
-@router.delete("/courses/{course_id}", response_model=MessageResponse)
+@router.delete("/courses/{course_id}", response_model=MessageResponse, dependencies=[Depends(document_csrf_header)])
 def delete_course(course_id: int, db: SessionDep, request: Request) -> MessageResponse:
     course = CourseAdminService(db).get(course_id, include_deleted=True)
     result = CourseAdminService(db).soft_delete(course_id)
@@ -387,7 +407,12 @@ def list_course_offerings(
     )
 
 
-@router.post("/course-offerings", response_model=CourseOfferingRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/course-offerings",
+    response_model=CourseOfferingRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(document_csrf_header)],
+)
 def create_course_offering(payload: CourseOfferingCreate, db: SessionDep, request: Request) -> CourseOfferingRead:
     offering = OfferingAdminService(db).create(payload)
     label = f"{offering.course_code} {offering.term} {offering.year} section {offering.section}"
@@ -407,7 +432,11 @@ def get_course_offering(offering_id: int, db: SessionDep, include_deleted: bool 
     return OfferingAdminService(db).get(offering_id, include_deleted=include_deleted)
 
 
-@router.patch("/course-offerings/{offering_id}", response_model=CourseOfferingRead)
+@router.patch(
+    "/course-offerings/{offering_id}",
+    response_model=CourseOfferingRead,
+    dependencies=[Depends(document_csrf_header)],
+)
 def update_course_offering(
     offering_id: int,
     payload: CourseOfferingUpdate,
@@ -427,7 +456,11 @@ def update_course_offering(
     return offering
 
 
-@router.delete("/course-offerings/{offering_id}", response_model=MessageResponse)
+@router.delete(
+    "/course-offerings/{offering_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(document_csrf_header)],
+)
 def delete_course_offering(offering_id: int, db: SessionDep, request: Request) -> MessageResponse:
     offering = OfferingAdminService(db).get(offering_id, include_deleted=True)
     result = OfferingAdminService(db).soft_delete(offering_id)
@@ -443,7 +476,11 @@ def delete_course_offering(offering_id: int, db: SessionDep, request: Request) -
     return MessageResponse(**result)
 
 
-@router.post("/course-offerings/{offering_id}/teachers/{teacher_id}", response_model=MessageResponse)
+@router.post(
+    "/course-offerings/{offering_id}/teachers/{teacher_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(document_csrf_header)],
+)
 def assign_teacher(offering_id: int, teacher_id: int, db: SessionDep, request: Request) -> MessageResponse:
     result = OfferingAdminService(db).assign_teacher(offering_id, teacher_id)
     set_audit_context(
@@ -457,7 +494,11 @@ def assign_teacher(offering_id: int, teacher_id: int, db: SessionDep, request: R
     return MessageResponse(success=result["success"], message=result["message"])
 
 
-@router.delete("/course-offerings/{offering_id}/teachers/{teacher_id}", response_model=MessageResponse)
+@router.delete(
+    "/course-offerings/{offering_id}/teachers/{teacher_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(document_csrf_header)],
+)
 def unassign_teacher(offering_id: int, teacher_id: int, db: SessionDep, request: Request) -> MessageResponse:
     result = OfferingAdminService(db).unassign_teacher(offering_id, teacher_id)
     set_audit_context(
@@ -471,7 +512,11 @@ def unassign_teacher(offering_id: int, teacher_id: int, db: SessionDep, request:
     return MessageResponse(success=result["success"], message=result["message"])
 
 
-@router.post("/course-offerings/{offering_id}/students/{student_id}", response_model=MessageResponse)
+@router.post(
+    "/course-offerings/{offering_id}/students/{student_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(document_csrf_header)],
+)
 def enroll_student(offering_id: int, student_id: int, db: SessionDep, request: Request) -> MessageResponse:
     result = OfferingAdminService(db).enroll_student(offering_id, student_id)
     set_audit_context(
@@ -485,7 +530,11 @@ def enroll_student(offering_id: int, student_id: int, db: SessionDep, request: R
     return MessageResponse(success=result["success"], message=result["message"])
 
 
-@router.delete("/course-offerings/{offering_id}/students/{student_id}", response_model=MessageResponse)
+@router.delete(
+    "/course-offerings/{offering_id}/students/{student_id}",
+    response_model=MessageResponse,
+    dependencies=[Depends(document_csrf_header)],
+)
 def unenroll_student(offering_id: int, student_id: int, db: SessionDep, request: Request) -> MessageResponse:
     result = OfferingAdminService(db).unenroll_student(offering_id, student_id)
     set_audit_context(

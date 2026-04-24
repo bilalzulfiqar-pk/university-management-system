@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import CurrentUser, SessionDep, document_csrf_header
 from app.schemas.auth import AuthMeResponse, ChangePasswordRequest, LoginRequest, SessionResponse
 from app.schemas.common import MessageResponse
 from app.services.auth import AuthService
@@ -24,6 +24,7 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     response_model=SessionResponse,
     summary="Refresh current session",
     description="Rotate the refresh session and renew access cookies using the active refresh cookie.",
+    dependencies=[Depends(document_csrf_header)],
 )
 def refresh(request: Request, response: Response, db: SessionDep) -> SessionResponse:
     return AuthService(db).refresh(request, response)
@@ -34,6 +35,7 @@ def refresh(request: Request, response: Response, db: SessionDep) -> SessionResp
     response_model=MessageResponse,
     summary="Logout current user",
     description="Revoke the current session and clear authentication cookies.",
+    dependencies=[Depends(document_csrf_header)],
 )
 def logout(request: Request, response: Response, db: SessionDep, user: CurrentUser) -> MessageResponse:
     result = AuthService(db).logout(request, response, user)
@@ -45,6 +47,7 @@ def logout(request: Request, response: Response, db: SessionDep, user: CurrentUs
     response_model=MessageResponse,
     summary="Change password",
     description="Change the current user's password. Student and teacher accounts must do this on first login.",
+    dependencies=[Depends(document_csrf_header)],
 )
 def change_password(
     payload: ChangePasswordRequest,

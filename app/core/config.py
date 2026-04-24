@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 DEFAULT_SECRET_KEY = "change-me-to-a-long-random-secret-key-at-least-32-chars"  # nosec B105
@@ -22,8 +23,8 @@ class Settings(BaseSettings):
     admin_email: str = "admin@example.com"
     admin_password: str = DEFAULT_ADMIN_PASSWORD
     log_level: str = "INFO"
-    cors_origins: list[str] = Field(default_factory=list)
-    trusted_origins: list[str] = Field(default_factory=list)
+    cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    trusted_origins: Annotated[list[str], NoDecode] = Field(default_factory=list)
     redis_url: str | None = None
 
     access_cookie_name: str = "ums_access"
