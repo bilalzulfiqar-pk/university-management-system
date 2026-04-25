@@ -223,6 +223,30 @@ Copy-Item .env.example .env
 - `TRUSTED_ORIGINS`
 - cookie and rate-limit settings if needed
 
+### Important Environment Variables
+
+| Variable | Description | Example |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string used by the backend | `postgresql+psycopg://postgres:postgres@localhost:5432/university_management` |
+| `REDIS_URL` | Redis connection string for rate limiting and token/session security | `redis://127.0.0.1:6379/0` |
+| `SECRET_KEY` | Random secret used for signing tokens and security-sensitive values | `change-me-to-a-long-random-secret-key-at-least-32-chars` |
+| `JWT_ISSUER` | JWT issuer claim | `ums-api` |
+| `JWT_AUDIENCE` | JWT audience claim | `ums-spa` |
+| `ADMIN_EMAIL` | Seeded initial admin email | `admin@example.com` |
+| `ADMIN_PASSWORD` | Seeded initial admin password | `ChangeMe123!` |
+| `CORS_ORIGINS` | Allowed frontend origins for browser access | `http://localhost:5173,http://127.0.0.1:5173` |
+| `TRUSTED_ORIGINS` | Trusted origins for mutating cookie-authenticated requests | `http://localhost:5173,http://127.0.0.1:5173` |
+| `COOKIE_SAME_SITE` | SameSite policy for auth cookies | `lax` |
+| `COOKIE_SECURE` | Whether auth cookies require HTTPS | `false` for local development |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Access-cookie lifetime in minutes | `15` |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh-session lifetime in days | `7` |
+
+Other values in `.env.example` cover:
+
+- cookie names and cookie path/domain
+- login, refresh, read, write, and CSRF-failure rate limits
+- app environment flags such as `ENVIRONMENT`, `DEBUG`, and `SHOW_DOCS`
+
 Example defaults:
 
 ```env
