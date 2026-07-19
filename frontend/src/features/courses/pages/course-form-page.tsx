@@ -3,18 +3,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { listDepartments } from "@/features/departments/api";
 import { createCourse, getCourse, updateCourse } from "@/features/courses/api";
 import { applyApiFormErrors } from "@/lib/api/form-errors";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/forms/field";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { FormActions, FormCard, FormErrorBanner } from "@/components/forms/form-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/feedback/error-state";
 import { PageHeader } from "@/components/common/page-header";
 
@@ -37,12 +36,7 @@ export function CourseFormPage() {
 
   const form = useForm<CourseInputValues, unknown, CourseValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: "",
-      code: "",
-      credit_hours: "3",
-      department_id: "0",
-    },
+    defaultValues: { name: "", code: "", credit_hours: "3", department_id: "0" },
   });
 
   const departmentsQuery = useQuery({
@@ -82,57 +76,64 @@ export function CourseFormPage() {
     },
   });
 
-  if (departmentsQuery.isLoading || (isEditing && courseQuery.isLoading)) return <LoadingScreen label="Loading form..." />;
-  if (departmentsQuery.isError || (isEditing && courseQuery.isError)) return <ErrorState description="Course form data could not be loaded." />;
-
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Course form"
         title={isEditing ? "Edit Course" : "Create Course"}
-        description="Create the reusable catalog entry first, then turn it into term-specific offerings."
+        description="Create the reusable catalogue entry first, then turn it into term-specific offerings."
       />
 
-      <Card className="max-w-4xl">
-        <form className="grid gap-5 md:grid-cols-2" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-          <Field label="Course title" error={form.formState.errors.name?.message}>
-            <Input {...form.register("name")} />
-          </Field>
-          <Field label="Course code" error={form.formState.errors.code?.message}>
-            <Input {...form.register("code")} />
-          </Field>
-          <Field label="Credit hours" error={form.formState.errors.credit_hours?.message}>
-            <Input type="number" min={1} {...form.register("credit_hours")} />
-          </Field>
-          <Field label="Department" error={form.formState.errors.department_id?.message}>
-            <Select {...form.register("department_id")}>
-              <option value={0}>Select department</option>
-              {departmentsQuery.data?.items.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+      {departmentsQuery.isLoading || (isEditing && courseQuery.isLoading) ? (
+        <div className="max-w-4xl grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-20 w-full" />
+          ))}
+        </div>
+      ) : departmentsQuery.isError || (isEditing && courseQuery.isError) ? (
+        <ErrorState description="Course form data could not be loaded." />
+      ) : (
+        <FormCard
+          title={isEditing ? "Course details" : "New course"}
+          description="Catalogue entry linked to a department."
+          backTo="/admin/courses"
+        >
+          <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field label="Course title" error={form.formState.errors.name?.message} required>
+                <Input placeholder="Data Structures" {...form.register("name")} />
+              </Field>
 
-          <div className="md:col-span-2">
-            {form.formState.errors.root?.message ? (
-              <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
-                {form.formState.errors.root.message}
-              </div>
-            ) : null}
-          </div>
+              <Field label="Course code" hint="Unique across the catalogue" error={form.formState.errors.code?.message} required>
+                <Input placeholder="CS301" {...form.register("code")} />
+              </Field>
 
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving..." : isEditing ? "Save changes" : "Create course"}
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link to="/admin/courses">Cancel</Link>
-            </Button>
-          </div>
-        </form>
-      </Card>
+              <Field label="Credit hours" error={form.formState.errors.credit_hours?.message} required>
+                <Input type="number" min={1} {...form.register("credit_hours")} />
+              </Field>
+
+              <Field label="Department" error={form.formState.errors.department_id?.message} required>
+                <Select {...form.register("department_id")}>
+                  <option value={0}>Select department</option>
+                  {departmentsQuery.data?.items.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <FormErrorBanner message={form.formState.errors.root?.message} />
+
+            <FormActions
+              submitLabel={isEditing ? "Save changes" : "Create course"}
+              pending={mutation.isPending}
+              cancelTo="/admin/courses"
+            />
+          </form>
+        </FormCard>
+      )}
     </div>
   );
 }

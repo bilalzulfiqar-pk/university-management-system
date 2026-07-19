@@ -1,18 +1,28 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Pencil, UserMinus, UserPlus, UsersRound } from "lucide-react";
 
 import { listStudents } from "@/features/students/api";
 import { listTeachers } from "@/features/teachers/api";
-import { assignTeacher, enrollStudent, getOffering, unassignTeacher, unenrollStudent } from "@/features/offerings/api";
+import {
+  assignTeacher,
+  enrollStudent,
+  getOffering,
+  unassignTeacher,
+  unenrollStudent,
+} from "@/features/offerings/api";
 import { ErrorState } from "@/components/feedback/error-state";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { PageHeader } from "@/components/common/page-header";
+import { FactGrid } from "@/components/common/fact-grid";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTerm, fullName } from "@/lib/utils/format";
 
 export function OfferingDetailPage() {
@@ -89,107 +99,165 @@ export function OfferingDetailPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "Student unenrollment failed."),
   });
 
-  if (offeringQuery.isLoading || teachersQuery.isLoading || studentsQuery.isLoading) return <LoadingScreen label="Loading offering detail..." />;
-  if (offeringQuery.isError || !offeringQuery.data || teachersQuery.isError || studentsQuery.isError) {
-    return <ErrorState description="The course offering detail could not be loaded." onRetry={() => offeringQuery.refetch()} />;
-  }
-
-  const offering = offeringQuery.data;
+  const isLoading = offeringQuery.isLoading || teachersQuery.isLoading || studentsQuery.isLoading;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Offering detail"
-        title={`${offering.course_code} • ${formatTerm(offering.term)} ${offering.year} • Section ${offering.section}`}
-        description="This operational page combines overview, teacher assignment, and enrollment actions around one course offering."
+        title={offeringQuery.data ? `${offeringQuery.data.course_code} · ${formatTerm(offeringQuery.data.term)} ${offeringQuery.data.year}` : "Offering"}
+        description="Overview, teacher assignment, and enrollment actions for this course section."
+        actions={
+          <Button variant="secondary" asChild>
+            <Link to={`/admin/course-offerings/${offeringId}/edit`}>
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
+        }
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="space-y-4">
-          <h3 className="text-xl font-semibold text-ink-950">Overview</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <OverviewItem label="Course" value={`${offering.course_code} - ${offering.course_name}`} />
-            <OverviewItem label="Term and year" value={`${formatTerm(offering.term)} ${offering.year}`} />
-            <OverviewItem label="Section" value={offering.section} />
-            <OverviewItem label="Capacity" value={offering.capacity ? String(offering.capacity) : "No limit set"} />
-            <OverviewItem label="Assigned teachers" value={String(offering.teacher_ids.length)} />
-            <OverviewItem label="Enrolled students" value={String(offering.student_count)} />
-            <OverviewItem label="Created" value={formatDate(offering.created_at)} />
-            <OverviewItem label="Updated" value={formatDate(offering.updated_at)} />
-          </div>
-        </Card>
+      {isLoading ? (
+        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+          <Skeleton className="h-64 w-full rounded-card" />
+          <Skeleton className="h-64 w-full rounded-card" />
+        </div>
+      ) : offeringQuery.isError || !offeringQuery.data || teachersQuery.isError || studentsQuery.isError ? (
+        <ErrorState
+          description="The course offering detail could not be loaded."
+          onRetry={() => offeringQuery.refetch()}
+        />
+      ) : (
+        <>
+          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+            {/* Overview */}
+            <Card>
+              <CardTitle>Overview</CardTitle>
+              <CardDescription className="mt-1">Core details for this course section.</CardDescription>
+              <div className="mt-5">
+                <FactGrid
+                  facts={[
+                    { label: "Course", value: `${offeringQuery.data.course_code} · ${offeringQuery.data.course_name}` },
+                    { label: "Term", value: `${formatTerm(offeringQuery.data.term)} ${offeringQuery.data.year}` },
+                    { label: "Section", value: offeringQuery.data.section },
+                    {
+                      label: "Capacity",
+                      value: offeringQuery.data.capacity ? String(offeringQuery.data.capacity) : "No limit",
+                    },
+                    { label: "Assigned teachers", value: offeringQuery.data.teacher_ids.length },
+                    { label: "Enrolled students", value: offeringQuery.data.student_count },
+                    { label: "Created", value: formatDate(offeringQuery.data.created_at) },
+                    { label: "Updated", value: formatDate(offeringQuery.data.updated_at) },
+                  ]}
+                />
+              </div>
+            </Card>
 
-        <Card className="space-y-4">
-          <h3 className="text-xl font-semibold text-ink-950">Assigned teachers</h3>
-          <div className="space-y-3">
-            {assignedTeachers.length === 0 ? <p className="text-sm text-slate-700">No teachers assigned yet.</p> : null}
-            {assignedTeachers.map((teacher) => (
-              <div key={teacher.id} className="flex items-center justify-between gap-3 rounded-[16px] border border-slate-200 bg-slate-50 p-4">
-                <div>
-                  <p className="font-semibold text-ink-950">{fullName(teacher.first_name, teacher.last_name)}</p>
-                  <p className="text-sm text-slate-700">{teacher.email}</p>
-                </div>
-                <Button variant="danger" size="sm" onClick={() => unassignMutation.mutate(teacher.id)} disabled={unassignMutation.isPending}>
-                  Unassign
+            {/* Teachers */}
+            <Card>
+              <CardTitle>Assigned teachers</CardTitle>
+              <CardDescription className="mt-1">Faculty teaching this section.</CardDescription>
+
+              <div className="mt-5 space-y-2">
+                {assignedTeachers.length === 0 ? (
+                  <EmptyState
+                    title="No teachers assigned"
+                    description="Assign a teacher to this offering."
+                    icon={<UsersRound className="h-4 w-4" />}
+                  />
+                ) : (
+                  assignedTeachers.map((teacher) => {
+                    const name = fullName(teacher.first_name, teacher.last_name);
+                    return (
+                      <div
+                        key={teacher.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar name={name} seed={teacher.email} size="sm" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-ink-900">{name}</p>
+                            <p className="truncate text-xs text-slate-500">{teacher.email}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => unassignMutation.mutate(teacher.id)}
+                          loading={unassignMutation.isPending}
+                        >
+                          <UserMinus className="h-3.5 w-3.5" />
+                          Unassign
+                        </Button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2 border-t border-slate-200/80 pt-4 sm:flex-row">
+                <Select
+                  value={teacherId ? String(teacherId) : ""}
+                  onChange={(event) => setTeacherId(event.target.value ? Number(event.target.value) : undefined)}
+                >
+                  <option value="">Select teacher to assign</option>
+                  {availableTeachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {fullName(teacher.first_name, teacher.last_name)} ({teacher.employee_id})
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  disabled={!teacherId}
+                  loading={assignMutation.isPending}
+                  onClick={() => teacherId && assignMutation.mutate(teacherId)}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Assign
                 </Button>
               </div>
-            ))}
+            </Card>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row">
-            <Select value={teacherId ? String(teacherId) : ""} onChange={(event) => setTeacherId(event.target.value ? Number(event.target.value) : undefined)}>
-              <option value="">Select teacher to assign</option>
-              {availableTeachers.map((teacher) => (
-                <option key={teacher.id} value={teacher.id}>
-                  {fullName(teacher.first_name, teacher.last_name)} ({teacher.employee_id})
-                </option>
-              ))}
-            </Select>
-            <Button disabled={!teacherId || assignMutation.isPending} onClick={() => teacherId && assignMutation.mutate(teacherId)}>
-              Assign teacher
-            </Button>
-          </div>
-        </Card>
-      </div>
+          {/* Enrollment */}
+          <Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <CardTitle>Enrollment</CardTitle>
+                <CardDescription className="mt-1">Enroll or unenroll a specific student.</CardDescription>
+              </div>
+              <Badge variant="accent">{offeringQuery.data.student_count} currently enrolled</Badge>
+            </div>
 
-      <Card className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-xl font-semibold text-ink-950">Enrollment actions</h3>
-            <p className="text-sm text-slate-700">
-              The backend currently exposes enrollment mutations plus total student count. Use this action area to enroll or
-              unenroll a specific student when you know the target record.
-            </p>
-          </div>
-          <Badge variant="accent">{offering.student_count} currently enrolled</Badge>
-        </div>
-
-        <div className="flex flex-col gap-3 md:flex-row">
-          <Select value={studentId ? String(studentId) : ""} onChange={(event) => setStudentId(event.target.value ? Number(event.target.value) : undefined)}>
-            <option value="">Select student</option>
-            {studentsQuery.data?.items.map((student) => (
-              <option key={student.id} value={student.id}>
-                {fullName(student.first_name, student.last_name)} ({student.roll_number})
-              </option>
-            ))}
-          </Select>
-          <Button disabled={!studentId || enrollMutation.isPending} onClick={() => studentId && enrollMutation.mutate(studentId)}>
-            Enroll student
-          </Button>
-          <Button variant="secondary" disabled={!studentId || unenrollMutation.isPending} onClick={() => studentId && unenrollMutation.mutate(studentId)}>
-            Unenroll student
-          </Button>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function OverviewItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50/90 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-ink-950">{value}</p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <Select
+                value={studentId ? String(studentId) : ""}
+                onChange={(event) => setStudentId(event.target.value ? Number(event.target.value) : undefined)}
+              >
+                <option value="">Select student</option>
+                {studentsQuery.data?.items.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {fullName(student.first_name, student.last_name)} ({student.roll_number})
+                  </option>
+                ))}
+              </Select>
+              <Button disabled={!studentId} loading={enrollMutation.isPending} onClick={() => studentId && enrollMutation.mutate(studentId)}>
+                <UserPlus className="h-4 w-4" />
+                Enroll
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={!studentId}
+                loading={unenrollMutation.isPending}
+                onClick={() => studentId && unenrollMutation.mutate(studentId)}
+              >
+                <UserMinus className="h-4 w-4" />
+                Unenroll
+              </Button>
+            </div>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

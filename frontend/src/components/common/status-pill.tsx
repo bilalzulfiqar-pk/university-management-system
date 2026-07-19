@@ -7,6 +7,6 @@ export function StatusPill({
   archived?: boolean;
   active?: boolean;
 }) {
-  if (archived) return <Badge variant="warning">Archived</Badge>;
-  return <Badge variant={active ? "success" : "danger"}>{active ? "Active" : "Inactive"}</Badge>;
+  if (archived) return <Badge variant="warning" dot>Archived</Badge>;
+  return <Badge variant={active ? "success" : "danger"} dot>{active ? "Active" : "Inactive"}</Badge>;
 }

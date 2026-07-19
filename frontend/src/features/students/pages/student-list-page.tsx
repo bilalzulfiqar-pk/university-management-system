@@ -2,23 +2,32 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { Archive, ArchiveRestore, Pencil, Search, Trash2, UserPlus, Users } from "lucide-react";
 
 import { listDepartments } from "@/features/departments/api";
 import { archiveStudent, hardDeleteStudent, listStudents, restoreStudent } from "@/features/students/api";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
+import { RowActions, type RowAction } from "@/components/common/row-actions";
+import { ListPanel } from "@/components/common/list-panel";
 import { StatusPill } from "@/components/common/status-pill";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Table, TableBody, TableHead, Td, Th } from "@/components/ui/table";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { Table, TableBody, TableHead, Td, Th, TableRow } from "@/components/ui/table";
 import { formatDate, fullName } from "@/lib/utils/format";
 import type { StudentRead } from "@/lib/api/types";
+
+const STATUS_FILTERS = [
+  { value: "ACTIVE", label: "Active only" },
+  { value: "ARCHIVED", label: "Archived only" },
+  { value: "ALL", label: "All records" },
+] as const;
 
 export function StudentListPage() {
   const queryClient = useQueryClient();
@@ -26,11 +35,11 @@ export function StudentListPage() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [departmentId, setDepartmentId] = useState<number | undefined>();
   const [semester, setSemester] = useState<number | undefined>();
-  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "ARCHIVED" | "ALL">("ACTIVE");
+  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]["value"]>("ACTIVE");
   const [offset, setOffset] = useState(0);
-  const [dialogState, setDialogState] = useState<{ mode: "archive" | "hard-delete" | "restore"; student: StudentRead } | null>(
-    null,
-  );
+  const [dialogState, setDialogState] = useState<
+    { mode: "archive" | "hard-delete" | "restore"; student: StudentRead } | null
+  >(null);
 
   const departmentsQuery = useQuery({
     queryKey: ["departments-options"],
@@ -85,15 +94,14 @@ export function StudentListPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "Student hard delete failed."),
   });
 
-  if (studentsQuery.isLoading || departmentsQuery.isLoading) return <LoadingScreen label="Loading students..." />;
-  if (studentsQuery.isError || !studentsQuery.data) return <ErrorState description="Students could not be loaded." onRetry={() => studentsQuery.refetch()} />;
-
   const visibleStudents =
     statusFilter === "ARCHIVED"
-      ? studentsQuery.data.items.filter((student) => Boolean(student.deleted_at))
+      ? studentsQuery.data?.items.filter((student) => Boolean(student.deleted_at)) ?? []
       : statusFilter === "ALL"
-        ? studentsQuery.data.items
-        : studentsQuery.data.items.filter((student) => !student.deleted_at);
+        ? studentsQuery.data?.items ?? []
+        : studentsQuery.data?.items.filter((student) => !student.deleted_at) ?? [];
+
+  const hasFilters = Boolean(appliedSearch) || departmentId !== undefined || semester !== undefined;
 
   return (
     <div className="space-y-6">
@@ -103,55 +111,103 @@ export function StudentListPage() {
         description="Create, update, archive, and restore student records while keeping account access aligned with backend rules."
         actions={
           <Button asChild>
-            <Link to="/admin/students/new">Add student</Link>
+            <Link to="/admin/students/new">
+              <UserPlus className="h-4 w-4" />
+              Add student
+            </Link>
           </Button>
         }
       />
 
-      <Card className="space-y-4">
-        <form
-          className="grid gap-3 xl:grid-cols-[2fr_1fr_1fr_auto] xl:items-center"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setOffset(0);
-            setAppliedSearch(search.trim());
-          }}
-        >
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, email, or roll number" />
-          <Select value={departmentId ? String(departmentId) : ""} onChange={(event) => setDepartmentId(event.target.value ? Number(event.target.value) : undefined)}>
-            <option value="">All departments</option>
-            {departmentsQuery.data?.items.map((department) => (
-              <option key={department.id} value={department.id}>
-                {department.name}
-              </option>
-            ))}
-          </Select>
-          <Select value={semester ? String(semester) : ""} onChange={(event) => setSemester(event.target.value ? Number(event.target.value) : undefined)}>
-            <option value="">All semesters</option>
-            {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
-              <option key={value} value={value}>
-                Semester {value}
-              </option>
-            ))}
-          </Select>
-          <Button variant="secondary" type="submit">
-            Apply filters
-          </Button>
-        </form>
-
-        <div className="flex flex-col gap-3 rounded-[16px] border border-slate-200 bg-slate-50/80 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold text-ink-950">Record visibility</p>
-            <p className="text-sm text-slate-700">Switch to archived students whenever you need the restore or hard-delete actions.</p>
+      <ListPanel
+        filters={
+          <form
+            className="grid gap-3 lg:grid-cols-[2fr_1fr_1fr_auto] lg:items-center"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setOffset(0);
+              setAppliedSearch(search.trim());
+            }}
+          >
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by name, email, or roll number"
+              leadingIcon={<Search className="h-4 w-4" />}
+            />
+            <Select
+              value={departmentId ? String(departmentId) : ""}
+              onChange={(event) => setDepartmentId(event.target.value ? Number(event.target.value) : undefined)}
+            >
+              <option value="">All departments</option>
+              {departmentsQuery.data?.items.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={semester ? String(semester) : ""}
+              onChange={(event) => setSemester(event.target.value ? Number(event.target.value) : undefined)}
+            >
+              <option value="">All semesters</option>
+              {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
+                <option key={value} value={value}>
+                  Semester {value}
+                </option>
+              ))}
+            </Select>
+            <Button variant="secondary" type="submit">
+              Apply filters
+            </Button>
+          </form>
+        }
+        toolbar={
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-ink-900">Record visibility</p>
+              <p className="text-sm text-slate-500">
+                Switch to archived students to access restore or hard-delete actions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setAppliedSearch("");
+                    setDepartmentId(undefined);
+                    setSemester(undefined);
+                    setOffset(0);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+              <Select
+                className="lg:max-w-[220px]"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
+                }
+              >
+                {STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
-          <Select className="lg:max-w-[220px]" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "ACTIVE" | "ARCHIVED" | "ALL")}>
-            <option value="ACTIVE">Active only</option>
-            <option value="ARCHIVED">Archived only</option>
-            <option value="ALL">All records</option>
-          </Select>
-        </div>
-
-        {visibleStudents.length === 0 ? (
+        }
+      >
+        {studentsQuery.isLoading || departmentsQuery.isLoading ? (
+          <SkeletonTable rows={6} columns={7} />
+        ) : studentsQuery.isError || !studentsQuery.data ? (
+          <ErrorState description="Students could not be loaded." onRetry={() => studentsQuery.refetch()} />
+        ) : visibleStudents.length === 0 ? (
           <EmptyState
             title="No students found"
             description={
@@ -159,10 +215,16 @@ export function StudentListPage() {
                 ? "No archived students match the current filters."
                 : "Try widening your filters or create the first student record for this workspace."
             }
+            icon={<Users className="h-5 w-5" />}
+            action={
+              <Button asChild size="sm">
+                <Link to="/admin/students/new">Add student</Link>
+              </Button>
+            }
           />
         ) : (
           <>
-            <div className="overflow-x-auto rounded-[16px] border border-slate-200">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
               <Table>
                 <TableHead>
                   <tr>
@@ -173,52 +235,80 @@ export function StudentListPage() {
                     <Th>Semester</Th>
                     <Th>Status</Th>
                     <Th>Updated</Th>
-                    <Th className="text-right">Actions</Th>
+                    <Th align="right">Actions</Th>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {visibleStudents.map((student) => (
-                    <tr key={student.id}>
-                      <Td className="font-semibold">{fullName(student.first_name, student.last_name)}</Td>
-                      <Td>{student.roll_number}</Td>
-                      <Td>{student.email}</Td>
-                      <Td>{departmentsById.get(student.department_id) ?? `Department #${student.department_id}`}</Td>
-                      <Td>{student.current_semester}</Td>
-                      <Td>
-                        <StatusPill archived={Boolean(student.deleted_at)} active={student.is_active} />
-                      </Td>
-                      <Td>{formatDate(student.updated_at)}</Td>
-                      <Td className="min-w-[250px] text-right">
-                        <div className="flex flex-nowrap items-center justify-end gap-2 whitespace-nowrap">
-                          <Button variant="secondary" size="sm" asChild>
-                            <Link to={`/admin/students/${student.id}/edit`}>Edit</Link>
-                          </Button>
-                          {student.deleted_at ? (
-                            <>
-                              <Button size="sm" onClick={() => setDialogState({ mode: "restore", student })}>
-                                Restore
+                  {visibleStudents.map((student) => {
+                    const name = fullName(student.first_name, student.last_name);
+                    const actions: RowAction[] = student.deleted_at
+                      ? [
+                          {
+                            label: "Restore",
+                            icon: <ArchiveRestore />,
+                            onSelect: () => setDialogState({ mode: "restore", student }),
+                          },
+                          {
+                            label: "Hard delete",
+                            icon: <Trash2 />,
+                            destructive: true,
+                            onSelect: () => setDialogState({ mode: "hard-delete", student }),
+                          },
+                        ]
+                      : [
+                          {
+                            label: "Archive",
+                            icon: <Archive />,
+                            destructive: true,
+                            onSelect: () => setDialogState({ mode: "archive", student }),
+                          },
+                        ];
+
+                    return (
+                      <TableRow key={student.id}>
+                        <Td>
+                          <div className="flex items-center gap-3">
+                            <Avatar name={name} seed={student.email} size="sm" />
+                            <span className="font-semibold text-ink-900">{name}</span>
+                          </div>
+                        </Td>
+                        <Td className="tabular font-mono text-xs">{student.roll_number}</Td>
+                        <Td className="text-slate-500">{student.email}</Td>
+                        <Td>{departmentsById.get(student.department_id) ?? `Department #${student.department_id}`}</Td>
+                        <Td className="tabular">{student.current_semester}</Td>
+                        <Td>
+                          <StatusPill archived={Boolean(student.deleted_at)} active={student.is_active} />
+                        </Td>
+                        <Td className="text-slate-500">{formatDate(student.updated_at)}</Td>
+                        <Td align="right">
+                          <RowActions
+                            actions={actions}
+                            primaryAction={
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link to={`/admin/students/${student.id}/edit`}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  Edit
+                                </Link>
                               </Button>
-                              <Button variant="danger" size="sm" onClick={() => setDialogState({ mode: "hard-delete", student })}>
-                                Hard delete
-                              </Button>
-                            </>
-                          ) : (
-                            <Button variant="danger" size="sm" onClick={() => setDialogState({ mode: "archive", student })}>
-                              Archive
-                            </Button>
-                          )}
-                        </div>
-                      </Td>
-                    </tr>
-                  ))}
+                            }
+                          />
+                        </Td>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
 
-            <PaginationControls total={studentsQuery.data.total} limit={studentsQuery.data.limit} offset={studentsQuery.data.offset} onPageChange={setOffset} />
+            <PaginationControls
+              total={studentsQuery.data.total}
+              limit={studentsQuery.data.limit}
+              offset={studentsQuery.data.offset}
+              onPageChange={setOffset}
+            />
           </>
         )}
-      </Card>
+      </ListPanel>
 
       <Dialog
         open={Boolean(dialogState)}
@@ -236,7 +326,9 @@ export function StudentListPage() {
               ? "This will reactivate the student profile and linked account."
               : "This permanently removes the student profile and linked user if backend dependency rules allow it."
         }
-        confirmLabel={dialogState?.mode === "archive" ? "Archive" : dialogState?.mode === "restore" ? "Restore" : "Delete forever"}
+        confirmLabel={
+          dialogState?.mode === "archive" ? "Archive" : dialogState?.mode === "restore" ? "Restore" : "Delete forever"
+        }
         destructive={dialogState?.mode !== "restore"}
         pending={archiveMutation.isPending || restoreMutation.isPending || hardDeleteMutation.isPending}
         onClose={() => setDialogState(null)}

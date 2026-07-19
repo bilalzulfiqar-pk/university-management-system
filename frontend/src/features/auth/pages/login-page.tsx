@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, KeyRound, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,10 +7,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useAuth } from "@/app/providers/use-auth";
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Field } from "@/components/forms/field";
+import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api/client";
 import { getRoleHome } from "@/lib/constants/navigation";
 
@@ -25,6 +25,9 @@ const schema = z.object({
 
 type LoginValues = z.infer<typeof schema>;
 
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "admin@example.com";
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? "ChangeMe123!!";
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,16 +38,20 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      email: "admin@example.com",
-      password: "ChangeMe123!!",
-      totp_code: "",
-    },
+    defaultValues: { email: "", password: "", totp_code: "" },
   });
+
+  const useDemoCredentials = () => {
+    setValue("email", DEMO_EMAIL, { shouldValidate: false });
+    setValue("password", DEMO_PASSWORD, { shouldValidate: false });
+    setShowTotpField(false);
+    setError("root", { message: undefined });
+  };
 
   const onSubmit = handleSubmit(async (values) => {
     if (showTotpField && !values.totp_code.trim()) {
@@ -61,7 +68,8 @@ export function LoginPage() {
       toast.success(`Welcome back${result.user.first_name ? `, ${result.user.first_name}` : ""}.`);
       const destination = result.user.must_change_password
         ? "/change-password"
-        : ((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? getRoleHome(result.user.role));
+        : ((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ??
+          getRoleHome(result.user.role));
       navigate(destination, { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
@@ -83,48 +91,61 @@ export function LoginPage() {
   });
 
   return (
-    <Card className="mx-auto max-w-xl space-y-8 p-8">
+    <Card className="space-y-7 p-7 sm:p-8">
       <div className="space-y-4">
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink-800">
-          <ShieldCheck className="h-4 w-4" />
+        <div className="inline-flex items-center gap-2 rounded-full bg-ink-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-700 ring-1 ring-inset ring-ink-100">
+          <ShieldCheck className="h-3.5 w-3.5" />
           Secure access
         </div>
         <div className="space-y-2">
-          <h2 className="text-3xl font-semibold tracking-tight text-ink-950">Sign in to your workspace</h2>
-          <p className="text-sm leading-6 text-slate-700">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-[28px]">
+            Sign in to your workspace
+          </h1>
+          <p className="text-sm leading-relaxed text-slate-500">
             Use your assigned account to sign in. If this is your first login, you will be asked to change your
             password.
           </p>
         </div>
       </div>
 
-      <form className="space-y-5" onSubmit={onSubmit}>
+      <form className="space-y-5" onSubmit={onSubmit} noValidate>
         <Field label="Email address" error={errors.email?.message}>
-          <Input type="email" placeholder="admin@example.com" autoComplete="email" {...register("email")} />
+          <Input
+            type="email"
+            placeholder="you@university.edu"
+            autoComplete="email"
+            leadingIcon={<Mail className="h-4 w-4" />}
+            invalid={Boolean(errors.email)}
+            {...register("email")}
+          />
         </Field>
 
         <Field label="Password" error={errors.password?.message}>
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              {...register("password")}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
-              onClick={() => setShowPassword((value) => !value)}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            leadingIcon={<Lock className="h-4 w-4" />}
+            trailingSlot={
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="rounded p-1.5 text-slate-400 transition-smooth hover:text-ink-700"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            invalid={Boolean(errors.password)}
+            {...register("password")}
+          />
         </Field>
 
         {showTotpField ? (
           <Field
             label="Authenticator code"
-            hint="Enter the current 6-digit code from Google Authenticator."
+            hint="6-digit code from Google Authenticator"
             error={errors.totp_code?.message}
           >
             <Input
@@ -133,22 +154,33 @@ export function LoginPage() {
               autoComplete="one-time-code"
               inputMode="numeric"
               maxLength={6}
+              invalid={Boolean(errors.totp_code)}
               {...register("totp_code")}
             />
           </Field>
         ) : null}
 
         {errors.root?.message ? (
-          <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
+          <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700">
             {errors.root.message}
           </div>
         ) : null}
 
-        <Button className="w-full" type="submit" size="lg" disabled={isSubmitting}>
+        <Button className="w-full" type="submit" size="lg" loading={isSubmitting}>
           <KeyRound className="h-4 w-4" />
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
+
+      <div className="flex items-center justify-center">
+        <button
+          type="button"
+          onClick={useDemoCredentials}
+          className="text-xs font-medium text-ink-600 underline-offset-4 transition-smooth hover:text-ink-900 hover:underline"
+        >
+          Use demo credentials
+        </button>
+      </div>
     </Card>
   );
 }

@@ -1,33 +1,34 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 export function ErrorState({
   title = "Something went wrong",
-  description = "The page could not be loaded right now.",
+  description = "We couldn't load this right now. Please try again.",
   onRetry,
+  requestId,
 }: {
   title?: string;
   description?: string;
   onRetry?: () => void;
+  requestId?: string | null;
 }) {
   return (
-    <Card className="space-y-3 border-rose-100 bg-rose-50/70">
-      <div className="flex items-start gap-3">
-        <div className="rounded-full bg-white p-2 text-danger-500">
-          <AlertTriangle className="h-5 w-5" />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-ink-950">{title}</h3>
-          <p className="text-sm text-slate-700">{description}</p>
-          {onRetry ? (
-            <Button variant="secondary" onClick={onRetry}>
-              Try again
-            </Button>
-          ) : null}
-        </div>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-danger-200 bg-danger-50/60 px-6 py-12 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-danger-500 shadow-sm ring-1 ring-danger-200">
+        <AlertTriangle className="h-6 w-6" />
       </div>
-    </Card>
+      <h3 className="font-display text-lg font-semibold text-ink-900">{title}</h3>
+      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-slate-600">{description}</p>
+      {onRetry ? (
+        <Button variant="secondary" size="sm" className="mt-5" onClick={onRetry}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Try again
+        </Button>
+      ) : null}
+      {requestId ? (
+        <p className="mt-4 font-mono text-[11px] text-slate-400">request: {requestId}</p>
+      ) : null}
+    </div>
   );
 }

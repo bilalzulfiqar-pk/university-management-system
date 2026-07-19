@@ -3,16 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { createDepartment, getDepartment, updateDepartment } from "@/features/departments/api";
 import { applyApiFormErrors } from "@/lib/api/form-errors";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/forms/field";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { FormActions, FormCard, FormErrorBanner } from "@/components/forms/form-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/feedback/error-state";
 import { PageHeader } from "@/components/common/page-header";
 
@@ -66,9 +65,6 @@ export function DepartmentFormPage() {
     },
   });
 
-  if (isEditing && query.isLoading) return <LoadingScreen label="Loading department..." />;
-  if (isEditing && query.isError) return <ErrorState description="Department details could not be loaded." onRetry={() => query.refetch()} />;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -77,32 +73,48 @@ export function DepartmentFormPage() {
         description="Keep department setup short and consistent so courses and users map cleanly."
       />
 
-      <Card className="max-w-3xl">
-        <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-          <Field label="Department name" error={form.formState.errors.name?.message}>
-            <Input placeholder="Computer Science" {...form.register("name")} />
-          </Field>
+      {isEditing && query.isLoading ? (
+        <div className="max-w-3xl space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : isEditing && query.isError ? (
+        <ErrorState description="Department details could not be loaded." onRetry={() => query.refetch()} />
+      ) : (
+        <FormCard
+          title={isEditing ? "Department details" : "New department"}
+          description="Departments organize students, teachers, and courses."
+          backTo="/admin/departments"
+          className="max-w-3xl"
+        >
+          <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+            <Field label="Department name" error={form.formState.errors.name?.message} required>
+              <Input placeholder="Computer Science" invalid={Boolean(form.formState.errors.name)} {...form.register("name")} />
+            </Field>
 
-          <Field label="Department code" hint="Stored uppercase by the backend" error={form.formState.errors.code?.message}>
-            <Input placeholder="CS" {...form.register("code")} />
-          </Field>
+            <Field
+              label="Department code"
+              hint="Stored uppercase by the backend"
+              error={form.formState.errors.code?.message}
+              required
+            >
+              <Input
+                placeholder="CS"
+                invalid={Boolean(form.formState.errors.code)}
+                {...form.register("code")}
+              />
+            </Field>
 
-          {form.formState.errors.root?.message ? (
-            <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
-              {form.formState.errors.root.message}
-            </div>
-          ) : null}
+            <FormErrorBanner message={form.formState.errors.root?.message} />
 
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving..." : isEditing ? "Save changes" : "Create department"}
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link to="/admin/departments">Cancel</Link>
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <FormActions
+              submitLabel={isEditing ? "Save changes" : "Create department"}
+              pending={mutation.isPending}
+              cancelTo="/admin/departments"
+            />
+          </form>
+        </FormCard>
+      )}
     </div>
   );
 }

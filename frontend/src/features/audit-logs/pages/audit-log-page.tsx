@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { History, Search } from "lucide-react";
 
 import { listAuditLogs } from "@/features/audit-logs/api";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
-import { Card } from "@/components/ui/card";
+import { ListPanel } from "@/components/common/list-panel";
+import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
-import { formatDate } from "@/lib/utils/format";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate, relativeTime } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
 
 const ACTION_OPTIONS = [
   { value: "", label: "All actions" },
@@ -54,6 +57,12 @@ const METHOD_OPTIONS = [
   { value: "DELETE", label: "DELETE" },
 ] as const;
 
+const METHOD_VARIANT: Record<string, "success" | "info" | "warning" | "danger"> = {
+  POST: "success",
+  PATCH: "info",
+  DELETE: "danger",
+};
+
 export function AuditLogPage() {
   const [action, setAction] = useState("");
   const [entityType, setEntityType] = useState("");
@@ -67,15 +76,10 @@ export function AuditLogPage() {
         action: action || undefined,
         entity_type: entityType || undefined,
         method: method || undefined,
-        limit: 10,
+        limit: 15,
         offset,
       }),
   });
-
-  if (query.isLoading) return <LoadingScreen label="Loading audit history..." />;
-  if (query.isError || !query.data) {
-    return <ErrorState description="Audit history could not be loaded." onRetry={() => query.refetch()} />;
-  }
 
   return (
     <div className="space-y-6">
@@ -85,85 +89,109 @@ export function AuditLogPage() {
         description="Review admin actions by filtering readable backend-generated entries instead of raw request paths."
       />
 
-      <Card className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <Select
-            value={action}
-            onChange={(event) => {
-              setAction(event.target.value);
-              setOffset(0);
-            }}
-          >
-            {ACTION_OPTIONS.map((option) => (
-              <option key={option.value || "all-actions"} value={option.value}>
-                {option.label}
-              </option>
+      <ListPanel
+        filters={
+          <div className="grid gap-3 md:grid-cols-3">
+            <Select
+              value={action}
+              onChange={(event) => {
+                setAction(event.target.value);
+                setOffset(0);
+              }}
+            >
+              {ACTION_OPTIONS.map((option) => (
+                <option key={option.value || "all-actions"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={entityType}
+              onChange={(event) => {
+                setEntityType(event.target.value);
+                setOffset(0);
+              }}
+            >
+              {ENTITY_TYPE_OPTIONS.map((option) => (
+                <option key={option.value || "all-entities"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={method}
+              onChange={(event) => {
+                setMethod(event.target.value);
+                setOffset(0);
+              }}
+            >
+              {METHOD_OPTIONS.map((option) => (
+                <option key={option.value || "all-methods"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        }
+      >
+        {query.isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-24 w-full rounded-xl" />
             ))}
-          </Select>
-          <Select
-            value={entityType}
-            onChange={(event) => {
-              setEntityType(event.target.value);
-              setOffset(0);
-            }}
-          >
-            {ENTITY_TYPE_OPTIONS.map((option) => (
-              <option key={option.value || "all-entities"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={method}
-            onChange={(event) => {
-              setMethod(event.target.value);
-              setOffset(0);
-            }}
-          >
-            {METHOD_OPTIONS.map((option) => (
-              <option key={option.value || "all-methods"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        {query.data.items.length === 0 ? (
+          </div>
+        ) : query.isError || !query.data ? (
+          <ErrorState description="Audit history could not be loaded." onRetry={() => query.refetch()} />
+        ) : query.data.items.length === 0 ? (
           <EmptyState
             title="No audit entries found"
             description="Try a broader filter or perform an admin action to generate a new audit entry."
+            icon={<Search className="h-5 w-5" />}
           />
         ) : (
           <>
-            <div className="space-y-4">
-              {query.data.items.map((entry) => (
-                <div key={entry.id} className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-5">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-ink-950">{entry.description}</p>
-                      <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em] text-slate-500">
-                        <span>{entry.action.replaceAll("_", " ")}</span>
-                        <span>|</span>
-                        <span>{entry.entity_type}</span>
-                        <span>|</span>
-                        <span>Status {entry.status_code}</span>
-                        {entry.entity_label ? (
-                          <>
-                            <span>|</span>
-                            <span>{entry.entity_label}</span>
-                          </>
-                        ) : null}
+            <ol className="space-y-2">
+              {query.data.items.map((entry) => {
+                const variant = METHOD_VARIANT[entry.method] ?? "neutral";
+                return (
+                  <li
+                    key={entry.id}
+                    className={cn(
+                      "flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-smooth hover:border-slate-300 lg:flex-row lg:items-start lg:justify-between",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink-50 text-ink-600">
+                        <History className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 space-y-1.5">
+                        <p className="text-sm font-medium text-ink-900">{entry.description}</p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant="neutral">{entry.action.replaceAll("_", " ")}</Badge>
+                          <Badge variant={variant}>{entry.method}</Badge>
+                          {entry.status_code >= 400 ? (
+                            <Badge variant="danger" dot>
+                              {entry.status_code}
+                            </Badge>
+                          ) : (
+                            <Badge variant="success" dot>
+                              {entry.status_code}
+                            </Badge>
+                          )}
+                          {entry.entity_label ? <Badge variant="ink">{entry.entity_label}</Badge> : null}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right text-sm text-slate-700">
-                      <p className="font-semibold">{entry.actor_role ?? "System"}</p>
-                      <p>{formatDate(entry.created_at)}</p>
-                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{entry.method}</p>
+                    <div className="shrink-0 text-right text-xs text-slate-400 lg:text-right">
+                      <p className="font-semibold text-ink-700">{entry.actor_role ?? "System"}</p>
+                      <p>{relativeTime(entry.created_at)}</p>
+                      <p className="tabular font-mono text-[10px]">{formatDate(entry.created_at)}</p>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </li>
+                );
+              })}
+            </ol>
+
             <PaginationControls
               total={query.data.total}
               limit={query.data.limit}
@@ -172,7 +200,7 @@ export function AuditLogPage() {
             />
           </>
         )}
-      </Card>
+      </ListPanel>
     </div>
   );
 }

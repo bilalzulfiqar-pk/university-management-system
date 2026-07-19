@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ShieldCheck, ShieldOff, Smartphone } from "lucide-react";
+import { ShieldCheck, ShieldOff, Smartphone, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/app/providers/use-auth";
 import { PageHeader } from "@/components/common/page-header";
 import { ErrorState } from "@/components/feedback/error-state";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Field } from "@/components/forms/field";
+import { Skeleton } from "@/components/ui/skeleton";
 import { disableTotp, enableTotp, getTotpStatus, startTotpSetup } from "@/features/auth/api";
 
 export function SecurityPage() {
@@ -27,17 +29,11 @@ export function SecurityPage() {
   });
 
   useEffect(() => {
-    if (!setupData) {
-      return;
-    }
-
+    if (!setupData) return;
     let cancelled = false;
     void QRCode.toDataURL(setupData.provisioning_uri, { width: 220, margin: 1 }).then((dataUrl: string) => {
-      if (!cancelled) {
-        setQrCodeUrl(dataUrl);
-      }
+      if (!cancelled) setQrCodeUrl(dataUrl);
     });
-
     return () => {
       cancelled = true;
     };
@@ -64,7 +60,7 @@ export function SecurityPage() {
       setSetupData(null);
       await statusQuery.refetch();
       await refreshUser();
-      toast.success("Google Authenticator is now enabled for your account.");
+      toast.success("Two-factor authentication is now enabled for your account.");
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : "Authenticator app could not be enabled.");
@@ -78,14 +74,14 @@ export function SecurityPage() {
       setDisableCode("");
       await statusQuery.refetch();
       await refreshUser();
-      toast.success("Authenticator app has been disabled.");
+      toast.success("Two-factor authentication has been disabled.");
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : "Authenticator app could not be disabled.");
     },
   });
 
-  if (statusQuery.isLoading) return <LoadingScreen label="Loading security settings..." />;
+  if (statusQuery.isLoading) return <Skeleton className="h-64 w-full rounded-card" />;
   if (statusQuery.isError || !statusQuery.data || !user) {
     return <ErrorState description="Security settings could not be loaded." onRetry={() => void statusQuery.refetch()} />;
   }
@@ -96,80 +92,88 @@ export function SecurityPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Account security"
-        title="Authenticator App"
-        description="Protect your account with Google Authenticator compatible two-factor authentication."
+        title="Two-factor authentication"
+        description="Protect your account with a Google Authenticator compatible time-based one-time password."
       />
 
-      <Card className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Current status</p>
-            <div className="flex items-center gap-3">
-              {isEnabled ? <ShieldCheck className="h-5 w-5 text-emerald-600" /> : <ShieldOff className="h-5 w-5 text-slate-500" />}
-              <p className="text-lg font-semibold text-ink-950">
-                {isEnabled ? "Authenticator app enabled" : "Authenticator app disabled"}
-              </p>
-            </div>
-            <p className="text-sm text-slate-700">
-              {isEnabled
-                ? "Future sign-ins will require your password plus a 6-digit authenticator code."
-                : "Enable Google Authenticator to require a time-based 6-digit code during login."}
+      {/* Status card */}
+      <Card className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            {isEnabled ? (
+              <ShieldCheck className="h-5 w-5 text-success-600" />
+            ) : (
+              <ShieldOff className="h-5 w-5 text-slate-400" />
+            )}
+            <p className="font-display text-lg font-semibold text-ink-900">
+              {isEnabled ? "Authenticator app enabled" : "Authenticator app disabled"}
             </p>
+            <Badge variant={isEnabled ? "success" : "neutral"} dot>
+              {isEnabled ? "Active" : "Off"}
+            </Badge>
           </div>
-          {!isEnabled ? (
-            <Button onClick={() => startSetupMutation.mutate()} disabled={startSetupMutation.isPending}>
-              <Smartphone className="h-4 w-4" />
-              {startSetupMutation.isPending ? "Preparing setup..." : "Set up Google Authenticator"}
-            </Button>
-          ) : null}
+          <p className="text-sm leading-relaxed text-slate-500">
+            {isEnabled
+              ? "Future sign-ins will require your password plus a 6-digit authenticator code."
+              : "Enable two-factor authentication to require a time-based 6-digit code during login."}
+          </p>
         </div>
+        {!isEnabled ? (
+          <Button onClick={() => startSetupMutation.mutate()} loading={startSetupMutation.isPending}>
+            <Smartphone className="h-4 w-4" />
+            Set up authenticator
+          </Button>
+        ) : null}
       </Card>
 
+      {/* Setup flow */}
       {!isEnabled && setupData ? (
         <Card className="grid gap-6 lg:grid-cols-[240px_1fr]">
           <div className="flex flex-col items-center justify-start gap-3">
-            <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               {qrCodeUrl ? (
                 <img src={qrCodeUrl} alt="Google Authenticator QR code" className="h-[220px] w-[220px]" />
               ) : (
-                <div className="flex h-[220px] w-[220px] items-center justify-center rounded-[18px] bg-slate-100 text-sm text-slate-500">
-                  Generating QR...
+                <div className="flex h-[220px] w-[220px] items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500">
+                  Generating QR…
                 </div>
               )}
             </div>
-            <p className="text-center text-xs uppercase tracking-[0.18em] text-slate-500">Scan with Google Authenticator</p>
+            <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Scan with Google Authenticator
+            </p>
           </div>
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-ink-950">Finish setup</h3>
-              <p className="text-sm text-slate-700">
+              <h3 className="font-display text-lg font-semibold text-ink-900">Finish setup</h3>
+              <p className="text-sm leading-relaxed text-slate-500">
                 Scan the QR code in Google Authenticator, then enter the 6-digit code shown by the app to enable
                 two-factor authentication.
               </p>
             </div>
 
-            <div className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Manual setup code</p>
-              <p className="mt-2 font-mono text-sm font-semibold tracking-[0.18em] text-ink-950">{setupData.secret}</p>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Manual setup code
+              </p>
+              <p className="mt-1.5 font-mono text-sm font-semibold tracking-[0.16em] text-ink-900">
+                {setupData.secret}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-950" htmlFor="enable-totp-code">
-                6-digit authenticator code
-              </label>
+            <Field label="6-digit authenticator code">
               <Input
-                id="enable-totp-code"
                 value={enableCode}
                 onChange={(event) => setEnableCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="123456"
                 inputMode="numeric"
                 maxLength={6}
               />
-            </div>
+            </Field>
 
             {actionError ? (
-              <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
+              <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700">
                 {actionError}
               </div>
             ) : null}
@@ -177,9 +181,10 @@ export function SecurityPage() {
             <div className="flex flex-wrap gap-3">
               <Button
                 onClick={() => enableMutation.mutate({ code: enableCode })}
-                disabled={enableMutation.isPending || enableCode.length !== 6}
+                loading={enableMutation.isPending}
+                disabled={enableCode.length !== 6}
               >
-                {enableMutation.isPending ? "Enabling..." : "Enable authenticator app"}
+                Enable authenticator
               </Button>
               <Button
                 variant="secondary"
@@ -196,31 +201,29 @@ export function SecurityPage() {
         </Card>
       ) : null}
 
+      {/* Disable flow */}
       {isEnabled ? (
         <Card className="space-y-5">
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-ink-950">Disable authenticator app</h3>
-            <p className="text-sm text-slate-700">
-              To disable two-factor authentication, confirm with a current 6-digit code from your authenticator app.
+            <h3 className="font-display text-lg font-semibold text-ink-900">Disable authenticator app</h3>
+            <p className="text-sm leading-relaxed text-slate-500">
+              Confirm with a current 6-digit code from your authenticator app to turn off two-factor authentication.
             </p>
           </div>
 
-          <div className="max-w-sm space-y-2">
-            <label className="text-sm font-semibold text-ink-950" htmlFor="disable-totp-code">
-              Current authenticator code
-            </label>
+          <Field label="Current authenticator code">
             <Input
-              id="disable-totp-code"
               value={disableCode}
               onChange={(event) => setDisableCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="123456"
               inputMode="numeric"
               maxLength={6}
+              className="max-w-xs"
             />
-          </div>
+          </Field>
 
           {actionError ? (
-            <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
+            <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700">
               {actionError}
             </div>
           ) : null}
@@ -228,19 +231,28 @@ export function SecurityPage() {
           <Button
             variant="secondary"
             onClick={() => disableMutation.mutate({ code: disableCode })}
-            disabled={disableMutation.isPending || disableCode.length !== 6}
+            loading={disableMutation.isPending}
+            disabled={disableCode.length !== 6}
           >
-            {disableMutation.isPending ? "Disabling..." : "Disable authenticator app"}
+            Disable authenticator
           </Button>
         </Card>
       ) : null}
 
+      {/* Info card */}
       <Card className="space-y-3">
-        <h3 className="text-xl font-semibold text-ink-950">What changes after enabling?</h3>
-        <ul className="space-y-2 text-sm text-slate-700">
-          <li>Your login will require email, password, and a 6-digit code from Google Authenticator.</li>
-          <li>Your existing active browser session keeps working until you sign out or it expires.</li>
-          <li>If you disable the authenticator app, future logins go back to password-only sign-in.</li>
+        <h3 className="font-display text-lg font-semibold text-ink-900">What changes after enabling?</h3>
+        <ul className="space-y-2.5 text-sm text-slate-600">
+          {[
+            "Your login will require email, password, and a 6-digit code from Google Authenticator.",
+            "Your existing active browser session keeps working until you sign out or it expires.",
+            "If you disable the authenticator app, future logins go back to password-only sign-in.",
+          ].map((line) => (
+            <li key={line} className="flex items-start gap-2.5">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success-500" />
+              <span>{line}</span>
+            </li>
+          ))}
         </ul>
       </Card>
     </div>

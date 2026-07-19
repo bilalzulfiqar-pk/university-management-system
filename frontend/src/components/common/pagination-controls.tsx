@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 export function PaginationControls({
@@ -13,28 +15,55 @@ export function PaginationControls({
 }) {
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.max(1, Math.ceil(total / limit));
+  const from = total === 0 ? 0 : offset + 1;
+  const to = Math.min(offset + limit, total);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
-      <p>
-        Showing <span className="font-semibold text-ink-950">{Math.min(offset + 1, total || 1)}</span>-
-        <span className="font-semibold text-ink-950">{Math.min(offset + limit, total)}</span> of{" "}
-        <span className="font-semibold text-ink-950">{total}</span>
+    <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+      <p className="tabular">
+        Showing <span className="font-semibold text-ink-900">{from}</span>–
+        <span className="font-semibold text-ink-900">{to}</span> of{" "}
+        <span className="font-semibold text-ink-900">{total}</span>
       </p>
-      <div className="flex items-center gap-2">
-        <Button variant="secondary" size="sm" disabled={offset === 0} onClick={() => onPageChange(Math.max(0, offset - limit))}>
-          Previous
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="First page"
+          disabled={offset === 0}
+          onClick={() => onPageChange(0)}
+        >
+          <ChevronsLeft className="h-4 w-4" />
         </Button>
-        <span className="px-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Previous page"
+          disabled={offset === 0}
+          onClick={() => onPageChange(Math.max(0, offset - limit))}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="tabular px-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Page {currentPage} / {totalPages}
         </span>
         <Button
-          variant="secondary"
-          size="sm"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Next page"
           disabled={offset + limit >= total}
           onClick={() => onPageChange(offset + limit)}
         >
-          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Last page"
+          disabled={offset + limit >= total}
+          onClick={() => onPageChange((totalPages - 1) * limit)}
+        >
+          <ChevronsRight className="h-4 w-4" />
         </Button>
       </div>
     </div>

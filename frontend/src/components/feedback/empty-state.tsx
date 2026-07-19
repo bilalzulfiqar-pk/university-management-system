@@ -1,21 +1,35 @@
 import type { ReactNode } from "react";
 
-import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils/cn";
 
 export function EmptyState({
   title,
   description,
   action,
+  icon,
+  className,
 }: {
   title: string;
   description: string;
   action?: ReactNode;
+  icon?: ReactNode;
+  className?: string;
 }) {
   return (
-    <Card className="space-y-3 border-dashed bg-white/70 text-center">
-      <h3 className="text-lg font-semibold text-ink-950">{title}</h3>
-      <p className="mx-auto max-w-lg text-sm text-slate-700">{description}</p>
-      {action ? <div className="pt-2">{action}</div> : null}
-    </Card>
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/40 px-6 py-14 text-center",
+        className,
+      )}
+    >
+      {icon ? (
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm ring-1 ring-slate-200">
+          {icon}
+        </div>
+      ) : null}
+      <h3 className="font-display text-lg font-semibold text-ink-900">{title}</h3>
+      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-slate-500">{description}</p>
+      {action ? <div className="mt-5">{action}</div> : null}
+    </div>
   );
 }

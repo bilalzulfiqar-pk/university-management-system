@@ -3,46 +3,59 @@ import { useQuery } from "@tanstack/react-query";
 
 import { listMyStudentOfferings } from "@/features/student-portal/api";
 import { ErrorState } from "@/components/feedback/error-state";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { PageHeader } from "@/components/common/page-header";
-import { Card } from "@/components/ui/card";
+import { FactGrid } from "@/components/common/fact-grid";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTerm } from "@/lib/utils/format";
 
 export function StudentOfferingDetailPage() {
   const params = useParams();
   const offeringId = Number(params.id);
-  const query = useQuery({ queryKey: ["my-student-offerings"], queryFn: () => listMyStudentOfferings({ limit: 50, offset: 0 }) });
+  const query = useQuery({
+    queryKey: ["my-student-offerings"],
+    queryFn: () => listMyStudentOfferings({ limit: 50, offset: 0 }),
+  });
 
-  if (query.isLoading) return <LoadingScreen label="Loading course offering..." />;
-  if (query.isError || !query.data) return <ErrorState description="Course offering detail could not be loaded." />;
-
-  const offering = query.data.items.find((item) => item.id === offeringId);
-  if (!offering) return <ErrorState description="This offering is not part of your current enrollments." />;
+  const offering = query.data?.items.find((item) => item.id === offeringId);
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Student portal"
-        title={`${offering.course_code} • ${formatTerm(offering.term)} ${offering.year}`}
-        description="A simple read-only view of the enrolled offering tied to your own account."
+        title={offering ? `${offering.course_code} · ${formatTerm(offering.term)} ${offering.year}` : "Offering"}
+        description="A read-only view of the enrolled offering tied to your own account."
       />
-      <Card className="grid gap-4 md:grid-cols-2">
-        <DetailRow label="Course" value={`${offering.course_code} - ${offering.course_name}`} />
-        <DetailRow label="Section" value={offering.section} />
-        <DetailRow label="Capacity" value={offering.capacity ? String(offering.capacity) : "No capacity set"} />
-        <DetailRow label="Assigned teachers" value={String(offering.teacher_ids.length)} />
-        <DetailRow label="Student count" value={String(offering.student_count)} />
-        <DetailRow label="Updated" value={formatDate(offering.updated_at)} />
-      </Card>
-    </div>
-  );
-}
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[16px] border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-ink-950">{value}</p>
+      {query.isLoading ? (
+        <Skeleton className="h-48 w-full rounded-card" />
+      ) : query.isError || !query.data ? (
+        <ErrorState description="Course offering detail could not be loaded." onRetry={() => query.refetch()} />
+      ) : !offering ? (
+        <ErrorState description="This offering is not part of your current enrollments." />
+      ) : (
+        <Card>
+          <CardTitle>{offering.course_name}</CardTitle>
+          <CardDescription className="mt-1">
+            {formatTerm(offering.term)} {offering.year} · Section {offering.section}
+          </CardDescription>
+          <div className="mt-5">
+            <FactGrid
+              facts={[
+                { label: "Course code", value: offering.course_code, mono: true },
+                { label: "Section", value: offering.section },
+                {
+                  label: "Capacity",
+                  value: offering.capacity ? String(offering.capacity) : "No limit",
+                },
+                { label: "Assigned teachers", value: offering.teacher_ids.length },
+                { label: "Enrolled students", value: offering.student_count },
+                { label: "Last updated", value: formatDate(offering.updated_at) },
+              ]}
+            />
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

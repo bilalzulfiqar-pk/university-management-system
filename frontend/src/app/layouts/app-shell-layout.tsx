@@ -1,43 +1,117 @@
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
-import { Card } from "@/components/ui/card";
 import { ShellSidebar } from "@/components/common/shell-sidebar";
 import { ShellTopbar } from "@/components/common/shell-topbar";
+import { CommandPalette } from "@/components/common/command-palette";
+import { resolveRoute } from "@/lib/constants/route-registry";
 
-const routeCopy: Record<string, { title: string; description: string }> = {
-  "/admin/dashboard": {
-    title: "Admin Dashboard",
-    description: "Track the health of the university data setup and jump into your most common admin tasks.",
-  },
-  "/teacher/dashboard": {
-    title: "Teacher Dashboard",
-    description: "Stay focused on your assigned offerings and the students currently in your classes.",
-  },
-  "/student/dashboard": {
-    title: "Student Dashboard",
-    description: "Review your profile and enrolled course offerings from one simple home base.",
-  },
-  "/security": {
-    title: "Security Settings",
-    description: "Manage authenticator app protection for your account.",
-  },
-};
+const COLLAPSE_KEY = "ums:sidebar-collapsed";
+
+function readInitialCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  // Only collapse on large screens — never start collapsed on tablet where the
+  // sidebar is a drawer.
+  if (window.matchMedia("(min-width: 1024px)").matches) {
+    return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+  }
+  return false;
+}
 
 export function AppShellLayout() {
   const location = useLocation();
-  const copy = routeCopy[location.pathname];
+  const [collapsed, setCollapsed] = useState<boolean>(readInitialCollapsed);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Resolve route metadata for the topbar + document title.
+  const route = resolveRoute(location.pathname);
+
+  // Global ⌘K / Ctrl+K shortcut.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((current) => !current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [drawerOpen]);
+
+  // Close the drawer on Escape (the command palette handles its own Escape).
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
+
+  const toggleCollapse = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      }
+      return next;
+    });
+  };
 
   return (
-    <div className="app-shell-grid">
-      <ShellSidebar />
-      <div className="min-w-0">
-        <ShellTopbar title={copy?.title} description={copy?.description} />
-        <div className="px-5 py-6 md:px-8">
-          <Card className="min-h-[calc(100vh-148px)] bg-white/60 p-4 md:p-6">
-            <Outlet />
-          </Card>
+    <div className="app-shell">
+      {/* Desktop sidebar */}
+      <aside
+        className="app-shell__sidebar hidden lg:block"
+        style={{ ["--sidebar-width" as string]: collapsed ? "76px" : "264px" }}
+      >
+        <ShellSidebar
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapse}
+        />
+      </aside>
+
+      {/* Mobile drawer */}
+      {drawerOpen ? (
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <div
+            className="absolute inset-0 bg-ink-950/55 backdrop-blur-[2px] animate-fade-in"
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden
+          />
+          <div className="app-shell__sidebar is-open absolute inset-y-0 left-0 w-[280px] shadow-xl">
+            <ShellSidebar collapsed={false} onNavigate={() => setDrawerOpen(false)} />
+          </div>
         </div>
+      ) : null}
+
+      <div className="app-shell__main">
+        <ShellTopbar
+          title={route.title}
+          description={route.description}
+          onOpenMenu={() => setDrawerOpen(true)}
+          onOpenCommandPalette={() => setPaletteOpen(true)}
+        />
+
+        <main className="app-shell__content">
+          <div key={location.pathname} className="page-fade">
+            <Outlet />
+          </div>
+        </main>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }

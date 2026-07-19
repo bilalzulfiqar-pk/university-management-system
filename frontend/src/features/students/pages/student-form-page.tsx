@@ -1,20 +1,19 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { listDepartments } from "@/features/departments/api";
 import { createStudent, getStudent, updateStudent } from "@/features/students/api";
 import { applyApiFormErrors } from "@/lib/api/form-errors";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/forms/field";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { FormActions, FormCard, FormErrorBanner, FormToggle } from "@/components/forms/form-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/feedback/error-state";
 import { PageHeader } from "@/components/common/page-header";
 
@@ -79,6 +78,8 @@ export function StudentFormPage() {
     }
   }, [studentQuery.data, form]);
 
+  const isActive = useWatch({ control: form.control, name: "is_active" });
+
   const mutation = useMutation({
     mutationFn: async (values: StudentValues) => {
       const payload = {
@@ -103,9 +104,6 @@ export function StudentFormPage() {
     },
   });
 
-  if (departmentsQuery.isLoading || (isEditing && studentQuery.isLoading)) return <LoadingScreen label="Loading form..." />;
-  if (departmentsQuery.isError || (isEditing && studentQuery.isError)) return <ErrorState description="Student form data could not be loaded." />;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -114,76 +112,95 @@ export function StudentFormPage() {
         description="Admin-created students receive a temporary password and must change it on first login."
       />
 
-      <Card className="max-w-4xl">
-        <form className="grid gap-5 md:grid-cols-2" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-          <Field label="Email address" error={form.formState.errors.email?.message}>
-            <Input type="email" {...form.register("email")} />
-          </Field>
+      {departmentsQuery.isLoading || (isEditing && studentQuery.isLoading) ? (
+        <div className="max-w-4xl grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-20 w-full" />
+          ))}
+        </div>
+      ) : departmentsQuery.isError || (isEditing && studentQuery.isError) ? (
+        <ErrorState description="Student form data could not be loaded." />
+      ) : (
+        <FormCard
+          title={isEditing ? "Student details" : "New student"}
+          description="Admin-created students receive a temporary password and must change it on first login."
+          backTo="/admin/students"
+        >
+          <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field label="First name" error={form.formState.errors.first_name?.message} required>
+                <Input placeholder="Ayesha" {...form.register("first_name")} />
+              </Field>
 
-          <Field
-            label="Temporary password"
-            hint={isEditing ? "Leave blank to keep the existing password." : "Required for the first login."}
-            error={form.formState.errors.temporary_password?.message}
-          >
-            <Input type="password" {...form.register("temporary_password")} />
-          </Field>
+              <Field label="Last name" error={form.formState.errors.last_name?.message} required>
+                <Input placeholder="Khan" {...form.register("last_name")} />
+              </Field>
 
-          <Field label="First name" error={form.formState.errors.first_name?.message}>
-            <Input {...form.register("first_name")} />
-          </Field>
+              <Field label="Email address" error={form.formState.errors.email?.message} required>
+                <Input type="email" placeholder="student@university.edu" {...form.register("email")} />
+              </Field>
 
-          <Field label="Last name" error={form.formState.errors.last_name?.message}>
-            <Input {...form.register("last_name")} />
-          </Field>
+              <Field
+                label="Roll number"
+                hint="Unique across the workspace"
+                error={form.formState.errors.roll_number?.message}
+                required
+              >
+                <Input placeholder="FA22-BSCS-001" {...form.register("roll_number")} />
+              </Field>
 
-          <Field label="Roll number" error={form.formState.errors.roll_number?.message}>
-            <Input {...form.register("roll_number")} />
-          </Field>
+              <Field label="Department" error={form.formState.errors.department_id?.message} required>
+                <Select {...form.register("department_id")}>
+                  <option value={0}>Select department</option>
+                  {departmentsQuery.data?.items.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-          <Field label="Department" error={form.formState.errors.department_id?.message}>
-            <Select {...form.register("department_id")}>
-              <option value={0}>Select department</option>
-              {departmentsQuery.data?.items.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+              <Field label="Current semester" error={form.formState.errors.current_semester?.message} required>
+                <Select {...form.register("current_semester")}>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
+                    <option key={value} value={value}>
+                      Semester {value}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-          <Field label="Current semester" error={form.formState.errors.current_semester?.message}>
-            <Select {...form.register("current_semester")}>
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
-                <option key={value} value={value}>
-                  Semester {value}
-                </option>
-              ))}
-            </Select>
-          </Field>
+              <Field
+                label="Temporary password"
+                hint={isEditing ? "Leave blank to keep the existing password." : "Required for first login."}
+                error={form.formState.errors.temporary_password?.message}
+                className="md:col-span-2"
+              >
+                <Input
+                  type="password"
+                  placeholder={isEditing ? "••••••••" : "Set a temporary password"}
+                  {...form.register("temporary_password")}
+                />
+              </Field>
+            </div>
 
-          <label className="mt-8 flex items-center gap-3 rounded-[14px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
-            <input type="checkbox" {...form.register("is_active")} />
-            Account active
-          </label>
+            <FormToggle
+              label="Account active"
+              description="Inactive accounts cannot sign in."
+              checked={isActive}
+              onChange={(next) => form.setValue("is_active", next, { shouldDirty: true })}
+            />
 
-          <div className="md:col-span-2">
-            {form.formState.errors.root?.message ? (
-              <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
-                {form.formState.errors.root.message}
-              </div>
-            ) : null}
-          </div>
+            <FormErrorBanner message={form.formState.errors.root?.message} />
 
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving..." : isEditing ? "Save changes" : "Create student"}
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link to="/admin/students">Cancel</Link>
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <FormActions
+              submitLabel={isEditing ? "Save changes" : "Create student"}
+              pending={mutation.isPending}
+              cancelTo="/admin/students"
+            />
+          </form>
+        </FormCard>
+      )}
     </div>
   );
 }

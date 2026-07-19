@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/use-auth";
@@ -35,6 +37,8 @@ type ChangePasswordValues = z.infer<typeof schema>;
 export function ChangePasswordPage() {
   const navigate = useNavigate();
   const { user, refreshUser, setMustChangePassword } = useAuth();
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const {
     register,
     handleSubmit,
@@ -65,42 +69,84 @@ export function ChangePasswordPage() {
   });
 
   return (
-    <Card className="mx-auto max-w-xl space-y-7 p-8">
+    <Card className="space-y-7 p-7 sm:p-8">
       <div className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-ink-700">First login protection</p>
-        <h2 className="text-3xl font-semibold tracking-tight text-ink-950">Change your password to continue</h2>
-        <p className="text-sm leading-6 text-slate-700">
+        <div className="inline-flex items-center gap-2 rounded-full bg-warning-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-warning-700 ring-1 ring-inset ring-warning-200">
+          <KeyRound className="h-3.5 w-3.5" />
+          First login protection
+        </div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-900 sm:text-[28px]">
+          Change your password to continue
+        </h1>
+        <p className="text-sm leading-relaxed text-slate-500">
           {user?.role === "ADMIN"
             ? "Use this page whenever you want to rotate your password."
             : "Your admin assigned a temporary password. Set a personal one before you can access the rest of the app."}
         </p>
       </div>
 
-      <form className="space-y-5" onSubmit={onSubmit}>
+      <form className="space-y-5" onSubmit={onSubmit} noValidate>
         <Field label="Current password" error={errors.current_password?.message}>
-          <Input type="password" autoComplete="current-password" {...register("current_password")} />
+          <Input
+            type={showCurrent ? "text" : "password"}
+            autoComplete="current-password"
+            invalid={Boolean(errors.current_password)}
+            trailingSlot={
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showCurrent ? "Hide password" : "Show password"}
+                className="rounded p-1.5 text-slate-400 transition-smooth hover:text-ink-700"
+                onClick={() => setShowCurrent((value) => !value)}
+              >
+                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            {...register("current_password")}
+          />
         </Field>
 
         <Field
           label="New password"
-          hint="Use at least 8 characters, including upper, lower, number, and symbol."
+          hint="8+ chars, upper, lower, number, symbol"
           error={errors.new_password?.message}
         >
-          <Input type="password" autoComplete="new-password" {...register("new_password")} />
+          <Input
+            type={showNew ? "text" : "password"}
+            autoComplete="new-password"
+            invalid={Boolean(errors.new_password)}
+            trailingSlot={
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={showNew ? "Hide password" : "Show password"}
+                className="rounded p-1.5 text-slate-400 transition-smooth hover:text-ink-700"
+                onClick={() => setShowNew((value) => !value)}
+              >
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            }
+            {...register("new_password")}
+          />
         </Field>
 
         <Field label="Confirm new password" error={errors.confirm_password?.message}>
-          <Input type="password" autoComplete="new-password" {...register("confirm_password")} />
+          <Input
+            type={showNew ? "text" : "password"}
+            autoComplete="new-password"
+            invalid={Boolean(errors.confirm_password)}
+            {...register("confirm_password")}
+          />
         </Field>
 
         {errors.root?.message ? (
-          <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
+          <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700">
             {errors.root.message}
           </div>
         ) : null}
 
-        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Updating password..." : "Save new password"}
+        <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>
+          {isSubmitting ? "Updating password…" : "Save new password"}
         </Button>
       </form>
     </Card>

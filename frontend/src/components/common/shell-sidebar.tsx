@@ -1,83 +1,145 @@
-import { GraduationCap, LayoutDashboard, LockKeyhole, LogOut, School, ScrollText, ShieldUser, UsersRound } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft, LogOut, UserCircle } from "lucide-react";
 
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Dropdown, DropdownItem, DropdownSeparator } from "@/components/ui/dropdown";
+import { BrandMark } from "@/components/common/brand-mark";
 import { useAuth } from "@/app/providers/use-auth";
-import type { UserRole } from "@/lib/api/types";
+import { navByRole } from "@/lib/constants/navigation";
+import { navIconFor } from "@/lib/constants/icons";
 import { cn } from "@/lib/utils/cn";
 
-const navByRole: Record<UserRole, Array<{ to: string; label: string; icon: React.ReactNode }>> = {
-  ADMIN: [
-    { to: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: "/admin/departments", label: "Departments", icon: <School className="h-4 w-4" /> },
-    { to: "/admin/students", label: "Students", icon: <UsersRound className="h-4 w-4" /> },
-    { to: "/admin/teachers", label: "Teachers", icon: <ShieldUser className="h-4 w-4" /> },
-    { to: "/admin/courses", label: "Courses", icon: <GraduationCap className="h-4 w-4" /> },
-    { to: "/admin/course-offerings", label: "Offerings", icon: <ScrollText className="h-4 w-4" /> },
-    { to: "/admin/audit-logs", label: "Audit Logs", icon: <ScrollText className="h-4 w-4" /> },
-    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
-  ],
-  TEACHER: [
-    { to: "/teacher/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: "/teacher/profile", label: "My Profile", icon: <ShieldUser className="h-4 w-4" /> },
-    { to: "/teacher/course-offerings", label: "My Offerings", icon: <GraduationCap className="h-4 w-4" /> },
-    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
-  ],
-  STUDENT: [
-    { to: "/student/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: "/student/profile", label: "My Profile", icon: <ShieldUser className="h-4 w-4" /> },
-    { to: "/student/course-offerings", label: "My Enrollments", icon: <GraduationCap className="h-4 w-4" /> },
-    { to: "/security", label: "Security", icon: <LockKeyhole className="h-4 w-4" /> },
-  ],
-};
+interface ShellSidebarProps {
+  collapsed: boolean;
+  /** Called when a navigation link is activated (closes the mobile drawer). */
+  onNavigate?: () => void;
+  onToggleCollapse?: () => void;
+}
 
-export function ShellSidebar() {
+export function ShellSidebar({ collapsed, onNavigate, onToggleCollapse }: ShellSidebarProps) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   if (!user) return null;
 
-  const links = navByRole[user.role];
+  const sections = navByRole[user.role];
+  const userName = user.first_name ? `${user.first_name} ${user.last_name ?? ""}`.trim() : user.email;
+  const profilePath =
+    user.role === "ADMIN" ? "/admin/dashboard" : `/${user.role.toLowerCase()}/profile`;
 
   return (
-    <aside className="hidden min-h-screen border-r border-white/70 bg-ink-950 px-5 py-6 text-white md:block">
-      <div className="flex h-full flex-col gap-8">
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">University Management</p>
-            <h2 className="mt-2 text-2xl font-semibold">Operations Hub</h2>
-          </div>
-          <Badge className="bg-white/10 text-blue-100" variant="accent">
-            {user.role}
-          </Badge>
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-2">
-          {links.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 rounded-[14px] px-4 py-3 text-sm font-medium text-blue-100 transition hover:bg-white/10 hover:text-white",
-                  isActive && "bg-white/12 text-white shadow-inner",
-                )
-              }
-            >
-              {item.icon}
-              <span className="hidden xl:inline">{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="rounded-[18px] bg-white/6 p-4">
-          <p className="text-sm font-semibold">{user.first_name ?? user.email}</p>
-          <p className="mt-1 text-xs text-blue-200">{user.email}</p>
-          <Button className="mt-4 w-full" variant="secondary" onClick={() => logout()}>
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-        </div>
+    <div className="flex h-full flex-col bg-ink-950 text-ink-200">
+      {/* Brand header */}
+      <div className="flex h-16 items-center justify-between border-b border-white/5 px-4">
+        <BrandMark size={32} compact={collapsed} showWordmark={!collapsed} tone="light" />
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="hidden rounded-md p-1.5 text-ink-400 transition-smooth hover:bg-white/5 hover:text-white lg:block"
+        >
+          <ChevronLeft className={cn("h-4 w-4 transition-smooth", collapsed && "rotate-180")} />
+        </button>
       </div>
-    </aside>
+
+      {/* Nav sections */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
+        <div className="space-y-6">
+          {sections.map((section) => (
+            <div key={section.id}>
+              {!collapsed ? (
+                <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">
+                  {section.label}
+                </p>
+              ) : null}
+              <ul className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = navIconFor[item.to];
+                  const isActive =
+                    location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                  return (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        onClick={onNavigate}
+                        title={collapsed ? item.label : undefined}
+                        className={cn(
+                          "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-smooth",
+                          collapsed && "justify-center",
+                          isActive
+                            ? "bg-white/8 text-white"
+                            : "text-ink-300 hover:bg-white/5 hover:text-white",
+                        )}
+                      >
+                        {isActive ? (
+                          <span
+                            className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gold-500"
+                            aria-hidden
+                          />
+                        ) : null}
+                        {Icon ? <Icon className="h-[18px] w-[18px] shrink-0" /> : null}
+                        {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </nav>
+
+      {/* User card + actions */}
+      <div className="border-t border-white/5 p-3">
+        <Dropdown
+          align="left"
+          trigger={
+            <button
+              type="button"
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg p-2 text-left transition-smooth hover:bg-white/5",
+                collapsed && "justify-center",
+              )}
+            >
+              <Avatar name={userName} seed={user.email} size="sm" />
+              {!collapsed ? (
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-white">{userName}</span>
+                  <span className="block truncate text-xs text-ink-400">{user.email}</span>
+                </span>
+              ) : null}
+            </button>
+          }
+        >
+          {(close) => (
+            <>
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-ink-900">{userName}</p>
+                <p className="truncate text-xs text-slate-500">{user.email}</p>
+                <Badge variant="ink" className="mt-2">
+                  {user.role}
+                </Badge>
+              </div>
+              <DropdownSeparator />
+              <DropdownItem
+                icon={<UserCircle />}
+                onClick={() => {
+                  close();
+                  navigate(profilePath);
+                  onNavigate?.();
+                }}
+              >
+                Profile
+              </DropdownItem>
+              <DropdownItem icon={<LogOut />} destructive onClick={() => void logout()}>
+                Sign out
+              </DropdownItem>
+            </>
+          )}
+        </Dropdown>
+      </div>
+    </div>
   );
 }

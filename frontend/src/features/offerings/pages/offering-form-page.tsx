@@ -3,21 +3,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { listCourses } from "@/features/courses/api";
 import { createOffering, getOffering, updateOffering } from "@/features/offerings/api";
 import { academicTerms } from "@/lib/constants/options";
 import { applyApiFormErrors } from "@/lib/api/form-errors";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/forms/field";
-import { LoadingScreen } from "@/components/feedback/loading-screen";
+import { FormActions, FormCard, FormErrorBanner } from "@/components/forms/form-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/feedback/error-state";
 import { PageHeader } from "@/components/common/page-header";
+import { formatTerm } from "@/lib/utils/format";
 import type { AcademicTerm } from "@/lib/api/types";
 
 const schema = z.object({
@@ -96,9 +96,6 @@ export function OfferingFormPage() {
     },
   });
 
-  if (coursesQuery.isLoading || (isEditing && offeringQuery.isLoading)) return <LoadingScreen label="Loading form..." />;
-  if (coursesQuery.isError || (isEditing && offeringQuery.isError)) return <ErrorState description="Offering form data could not be loaded." />;
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -107,55 +104,66 @@ export function OfferingFormPage() {
         description="Tie a course to a term, year, and section so teachers and students can interact with the right academic instance."
       />
 
-      <Card className="max-w-4xl">
-        <form className="grid gap-5 md:grid-cols-2" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
-          <Field label="Course" error={form.formState.errors.course_id?.message}>
-            <Select {...form.register("course_id")}>
-              <option value={0}>Select course</option>
-              {coursesQuery.data?.items.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.code} - {course.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Term" error={form.formState.errors.term?.message}>
-            <Select {...form.register("term")}>
-              {academicTerms.map((term) => (
-                <option key={term} value={term}>
-                  {term}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Year" error={form.formState.errors.year?.message}>
-            <Input type="number" min={2000} max={2100} {...form.register("year")} />
-          </Field>
-          <Field label="Section" error={form.formState.errors.section?.message}>
-            <Input {...form.register("section")} />
-          </Field>
-          <Field label="Capacity" hint="Optional" error={form.formState.errors.capacity?.message}>
-            <Input type="number" min={1} {...form.register("capacity")} />
-          </Field>
+      {coursesQuery.isLoading || (isEditing && offeringQuery.isLoading) ? (
+        <div className="max-w-4xl grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <Skeleton key={index} className="h-20 w-full" />
+          ))}
+        </div>
+      ) : coursesQuery.isError || (isEditing && offeringQuery.isError) ? (
+        <ErrorState description="Offering form data could not be loaded." />
+      ) : (
+        <FormCard
+          title={isEditing ? "Offering details" : "New course offering"}
+          description="Term-specific section of a course."
+          backTo="/admin/course-offerings"
+        >
+          <form className="space-y-6" onSubmit={form.handleSubmit((values) => mutation.mutate(values))}>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field label="Course" error={form.formState.errors.course_id?.message} required>
+                <Select {...form.register("course_id")}>
+                  <option value={0}>Select course</option>
+                  {coursesQuery.data?.items.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.code} · {course.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-          <div className="md:col-span-2">
-            {form.formState.errors.root?.message ? (
-              <div className="rounded-[14px] border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-danger-500">
-                {form.formState.errors.root.message}
-              </div>
-            ) : null}
-          </div>
+              <Field label="Term" error={form.formState.errors.term?.message} required>
+                <Select {...form.register("term")}>
+                  {academicTerms.map((term) => (
+                    <option key={term} value={term}>
+                      {formatTerm(term)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-          <div className="flex flex-wrap gap-3 md:col-span-2">
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving..." : isEditing ? "Save changes" : "Create offering"}
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link to="/admin/course-offerings">Cancel</Link>
-            </Button>
-          </div>
-        </form>
-      </Card>
+              <Field label="Year" error={form.formState.errors.year?.message} required>
+                <Input type="number" min={2000} max={2100} {...form.register("year")} />
+              </Field>
+
+              <Field label="Section" hint="e.g. A, B, C" error={form.formState.errors.section?.message} required>
+                <Input placeholder="A" {...form.register("section")} />
+              </Field>
+
+              <Field label="Capacity" hint="Optional" error={form.formState.errors.capacity?.message}>
+                <Input type="number" min={1} placeholder="Unlimited" {...form.register("capacity")} />
+              </Field>
+            </div>
+
+            <FormErrorBanner message={form.formState.errors.root?.message} />
+
+            <FormActions
+              submitLabel={isEditing ? "Save changes" : "Create offering"}
+              pending={mutation.isPending}
+              cancelTo="/admin/course-offerings"
+            />
+          </form>
+        </FormCard>
+      )}
     </div>
   );
 }
