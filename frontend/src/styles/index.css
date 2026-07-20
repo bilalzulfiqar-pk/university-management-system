@@ -91,11 +91,12 @@ h4 {
   font-feature-settings: "tnum";
 }
 
-/* Global focus-visible ring for accessibility. */
+/* Global focus-visible ring for accessibility. The ring follows the element's
+   own border-radius via box-shadow — do NOT set border-radius here, or it
+   overrides component radii (e.g. inputs would square off on focus). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(51, 93, 125, 0.45);
-  border-radius: inherit;
 }
 
 /* Refined, thinner scrollbar. */
@@ -197,6 +198,17 @@ h4 {
 @media (min-width: 1024px) {
   .app-shell__content {
     padding: 2rem 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Pin the sidebar so it never scrolls away with the page. Long nav lists
+     scroll internally instead of pushing the user card off-screen. */
+  .app-shell__sidebar {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
   }
 }
 

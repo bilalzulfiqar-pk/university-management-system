@@ -20,10 +20,10 @@ export function Breadcrumb({ items, className }: { items: BreadcrumbItem[]; clas
           return (
             <Fragment key={`${item.label}-${index}`}>
               {index === 0 && item.to ? (
-                <li>
+                <li className="flex items-center">
                   <Link
                     to={item.to}
-                    className="inline-flex items-center text-slate-400 transition-smooth hover:text-ink-700"
+                    className="inline-flex items-center rounded text-slate-400 transition-smooth hover:text-ink-700"
                   >
                     <Home className="h-3.5 w-3.5" />
                   </Link>

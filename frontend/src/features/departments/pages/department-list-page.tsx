@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Archive, Building2, Plus, Search } from "lucide-react";
+import { Archive, Building2, Pencil, Plus, Search } from "lucide-react";
 
 import { archiveDepartment, listDepartments } from "@/features/departments/api";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { RowActions, type RowAction } from "@/components/common/row-actions";
 import { ListPanel } from "@/components/common/list-panel";
+import { MobileRecordCard } from "@/components/common/mobile-record-card";
 import { StatusPill } from "@/components/common/status-pill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -137,7 +138,8 @@ export function DepartmentListPage() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -188,6 +190,50 @@ export function DepartmentListPage() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 md:hidden">
+              {visibleDepartments.map((department) => {
+                const actions: RowAction[] = department.deleted_at
+                  ? []
+                  : [
+                      {
+                        label: "Archive",
+                        icon: <Archive />,
+                        destructive: true,
+                        onSelect: () => setSelectedId(department.id),
+                      },
+                    ];
+
+                return (
+                  <MobileRecordCard
+                    key={department.id}
+                    title={department.name}
+                    badges={
+                      <>
+                        <Badge variant="ink" className="font-mono">
+                          {department.code}
+                        </Badge>
+                        <StatusPill archived={Boolean(department.deleted_at)} />
+                      </>
+                    }
+                    fields={[{ label: "Updated", value: formatDate(department.updated_at) }]}
+                    actions={
+                      <RowActions
+                        actions={actions}
+                        primaryAction={
+                          <Button variant="ghost" size="icon-sm" asChild aria-label="Edit department">
+                            <Link to={`/admin/departments/${department.id}/edit`}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        }
+                      />
+                    }
+                  />
+                );
+              })}
             </div>
 
             <PaginationControls

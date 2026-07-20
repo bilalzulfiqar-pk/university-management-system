@@ -14,7 +14,7 @@ import {
 
 import { getAdminDashboardSummary } from "@/features/dashboard/api";
 import { ErrorState } from "@/components/feedback/error-state";
-import { PageHeader } from "@/components/common/page-header";
+import { DashboardHero } from "@/components/common/dashboard-hero";
 import { StatCard } from "@/components/common/stat-card";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ export function AdminDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <PageHeader eyebrow="Admin command center" title="Operations overview" />
+        <SkeletonCard className="h-36 w-full" />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {Array.from({ length: 5 }).map((_, index) => (
             <SkeletonCard key={index} />
@@ -108,7 +108,7 @@ export function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <DashboardHero
         eyebrow="Admin command center"
         title="Operations overview"
         description="Track the health of the university data setup and jump into the actions that matter most."
@@ -117,7 +117,11 @@ export function AdminDashboardPage() {
             <Button asChild>
               <Link to="/admin/students/new">Add student</Link>
             </Button>
-            <Button variant="secondary" asChild>
+            <Button
+              asChild
+              variant="secondary"
+              className="bg-white/10 text-white ring-white/15 hover:bg-white/15 hover:text-white"
+            >
               <Link to="/admin/course-offerings/new">Create offering</Link>
             </Button>
           </>

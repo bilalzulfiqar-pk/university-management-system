@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { RowActions, type RowAction } from "@/components/common/row-actions";
 import { ListPanel } from "@/components/common/list-panel";
+import { MobileRecordCard } from "@/components/common/mobile-record-card";
 import { StatusPill } from "@/components/common/status-pill";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -224,7 +225,8 @@ export function StudentListPage() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -298,6 +300,67 @@ export function StudentListPage() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 md:hidden">
+              {visibleStudents.map((student) => {
+                const name = fullName(student.first_name, student.last_name);
+                const actions: RowAction[] = student.deleted_at
+                  ? [
+                      {
+                        label: "Restore",
+                        icon: <ArchiveRestore />,
+                        onSelect: () => setDialogState({ mode: "restore", student }),
+                      },
+                      {
+                        label: "Hard delete",
+                        icon: <Trash2 />,
+                        destructive: true,
+                        onSelect: () => setDialogState({ mode: "hard-delete", student }),
+                      },
+                    ]
+                  : [
+                      {
+                        label: "Archive",
+                        icon: <Archive />,
+                        destructive: true,
+                        onSelect: () => setDialogState({ mode: "archive", student }),
+                      },
+                    ];
+
+                return (
+                  <MobileRecordCard
+                    key={student.id}
+                    title={name}
+                    avatar={<Avatar name={name} seed={student.email} size="sm" />}
+                    subtitle={student.email}
+                    badges={<StatusPill archived={Boolean(student.deleted_at)} active={student.is_active} />}
+                    fields={[
+                      { label: "Roll no.", value: <span className="font-mono text-xs">{student.roll_number}</span> },
+                      {
+                        label: "Department",
+                        value:
+                          departmentsById.get(student.department_id) ?? `#${student.department_id}`,
+                      },
+                      { label: "Semester", value: student.current_semester },
+                      { label: "Updated", value: formatDate(student.updated_at) },
+                    ]}
+                    actions={
+                      <RowActions
+                        actions={actions}
+                        primaryAction={
+                          <Button variant="ghost" size="icon-sm" asChild aria-label="Edit student">
+                            <Link to={`/admin/students/${student.id}/edit`}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        }
+                      />
+                    }
+                  />
+                );
+              })}
             </div>
 
             <PaginationControls

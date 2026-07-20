@@ -24,7 +24,7 @@ export function PageHeader({
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-600">{eyebrow}</p>
           </div>
         ) : null}
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-900 md:text-[28px]">{title}</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-900 md:text-[30px]">{title}</h1>
         {description ? (
           <p className="max-w-3xl text-sm leading-relaxed text-slate-500">{description}</p>
         ) : null}

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Archive, BookOpen, Pencil, Plus, Search } from "lucide-react";
+import { Archive, ArrowRight, BookOpen, Pencil, Plus, Search } from "lucide-react";
 
 import { listCourses } from "@/features/courses/api";
 import { archiveOffering, listOfferings } from "@/features/offerings/api";
@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { RowActions, type RowAction } from "@/components/common/row-actions";
 import { ListPanel } from "@/components/common/list-panel";
+import { MobileRecordCard } from "@/components/common/mobile-record-card";
 import { StatusPill } from "@/components/common/status-pill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -186,7 +187,8 @@ export function OfferingListPage() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -254,6 +256,60 @@ export function OfferingListPage() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 md:hidden">
+              {visibleOfferings.map((offering) => {
+                const actions: RowAction[] = offering.deleted_at
+                  ? []
+                  : [
+                      {
+                        label: "Archive",
+                        icon: <Archive />,
+                        destructive: true,
+                        onSelect: () => setSelectedId(offering.id),
+                      },
+                    ];
+
+                return (
+                  <MobileRecordCard
+                    key={offering.id}
+                    title={coursesById.get(offering.course_id) ?? `${offering.course_code} · ${offering.course_name}`}
+                    subtitle={
+                      <Badge variant="neutral">
+                        {formatTerm(offering.term)} {offering.year} · Section {offering.section}
+                      </Badge>
+                    }
+                    badges={<StatusPill archived={Boolean(offering.deleted_at)} />}
+                    fields={[
+                      { label: "Capacity", value: offering.capacity ?? "—" },
+                      { label: "Teachers", value: offering.teacher_ids.length },
+                      { label: "Students", value: offering.student_count },
+                      { label: "Updated", value: formatDate(offering.updated_at) },
+                    ]}
+                    actions={
+                      <RowActions
+                        actions={actions}
+                        primaryAction={
+                          <div className="flex items-center gap-1.5">
+                            <Button variant="ghost" size="icon-sm" asChild aria-label="Open offering">
+                              <Link to={`/admin/course-offerings/${offering.id}`}>
+                                <ArrowRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <Button variant="ghost" size="icon-sm" asChild aria-label="Edit offering">
+                              <Link to={`/admin/course-offerings/${offering.id}/edit`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                          </div>
+                        }
+                      />
+                    }
+                  />
+                );
+              })}
             </div>
 
             <PaginationControls

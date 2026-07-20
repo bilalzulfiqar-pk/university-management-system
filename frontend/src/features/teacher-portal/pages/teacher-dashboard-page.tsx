@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { getMyTeacherProfile, listMyTeacherOfferings } from "@/features/teacher-portal/api";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorState } from "@/components/feedback/error-state";
-import { PageHeader } from "@/components/common/page-header";
+import { DashboardHero } from "@/components/common/dashboard-hero";
 import { StatCard } from "@/components/common/stat-card";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { SkeletonCard } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ export function TeacherDashboardPage() {
   if (profileQuery.isLoading || offeringsQuery.isLoading) {
     return (
       <div className="space-y-8">
-        <PageHeader eyebrow="Teacher workspace" title="Welcome" />
+        <SkeletonCard className="h-36 w-full" />
         <div className="grid gap-4 md:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <SkeletonCard key={index} />
@@ -41,7 +41,7 @@ export function TeacherDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <DashboardHero
         eyebrow="Teacher workspace"
         title={`Welcome, ${profileQuery.data.first_name}`}
         description="Stay focused on the offerings assigned to you and the students inside them."

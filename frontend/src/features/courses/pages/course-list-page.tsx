@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import { RowActions, type RowAction } from "@/components/common/row-actions";
 import { ListPanel } from "@/components/common/list-panel";
+import { MobileRecordCard } from "@/components/common/mobile-record-card";
 import { StatusPill } from "@/components/common/status-pill";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,7 +166,8 @@ export function CourseListPage() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -223,6 +225,56 @@ export function CourseListPage() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 md:hidden">
+              {visibleCourses.map((course) => {
+                const actions: RowAction[] = course.deleted_at
+                  ? []
+                  : [
+                      {
+                        label: "Archive",
+                        icon: <Archive />,
+                        destructive: true,
+                        onSelect: () => setSelectedId(course.id),
+                      },
+                    ];
+
+                return (
+                  <MobileRecordCard
+                    key={course.id}
+                    title={course.name}
+                    subtitle={
+                      <Badge variant="ink" className="font-mono">
+                        {course.code}
+                      </Badge>
+                    }
+                    badges={<StatusPill archived={Boolean(course.deleted_at)} />}
+                    fields={[
+                      { label: "Credit hours", value: course.credit_hours },
+                      {
+                        label: "Department",
+                        value:
+                          departmentsById.get(course.department_id) ?? `#${course.department_id}`,
+                      },
+                      { label: "Updated", value: formatDate(course.updated_at) },
+                    ]}
+                    actions={
+                      <RowActions
+                        actions={actions}
+                        primaryAction={
+                          <Button variant="ghost" size="icon-sm" asChild aria-label="Edit course">
+                            <Link to={`/admin/courses/${course.id}/edit`}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        }
+                      />
+                    }
+                  />
+                );
+              })}
             </div>
 
             <PaginationControls
