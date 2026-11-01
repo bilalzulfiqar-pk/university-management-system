@@ -13,7 +13,11 @@ function readInitialCollapsed(): boolean {
   // Only collapse on large screens — never start collapsed on tablet where the
   // sidebar is a drawer.
   if (window.matchMedia("(min-width: 1024px)").matches) {
-    return window.localStorage.getItem(COLLAPSE_KEY) === "1";
+    try {
+      return window.sessionStorage.getItem(COLLAPSE_KEY) === "1";
+    } catch {
+      return false;
+    }
   }
   return false;
 }
@@ -63,7 +67,11 @@ export function AppShellLayout() {
     setCollapsed((current) => {
       const next = !current;
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+        try {
+          window.sessionStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+        } catch {
+          // Ignore storage quota or disabled storage errors
+        }
       }
       return next;
     });

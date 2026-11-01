@@ -88,11 +88,11 @@ export function Dialog({
 
         {children ? <div className="px-6 pb-2">{children}</div> : null}
 
-        <div className="flex items-center justify-end gap-3 border-t border-slate-200/80 px-6 py-4">
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={pending}>
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-200/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+          <Button variant="secondary" size="sm" onClick={onClose} disabled={pending} className="w-full sm:w-auto">
             {cancelLabel}
           </Button>
-          <Button variant={destructive ? "danger" : "primary"} size="sm" onClick={onConfirm} loading={pending}>
+          <Button variant={destructive ? "danger" : "primary"} size="sm" onClick={onConfirm} loading={pending} className="w-full sm:w-auto">
             {pending ? "Working…" : confirmLabel}
           </Button>
         </div>

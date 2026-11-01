@@ -19,13 +19,13 @@ export function PaginationControls({
   const to = Math.min(offset + limit, total);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-      <p className="tabular">
+    <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <p className="tabular text-xs sm:text-sm">
         Showing <span className="font-semibold text-ink-900">{from}</span>–
         <span className="font-semibold text-ink-900">{to}</span> of{" "}
         <span className="font-semibold text-ink-900">{total}</span>
       </p>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-1.5 sm:justify-end sm:w-auto">
         <Button
           variant="ghost"
           size="icon-sm"

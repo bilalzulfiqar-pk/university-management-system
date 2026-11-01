@@ -91,7 +91,7 @@ export function LoginPage() {
   });
 
   return (
-    <Card className="space-y-7 p-7 sm:p-8">
+    <Card className="space-y-6 p-5 sm:space-y-7 sm:p-7 md:p-8">
       <div className="space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full bg-ink-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-700 ring-1 ring-inset ring-ink-100">
           <ShieldCheck className="h-3.5 w-3.5" />

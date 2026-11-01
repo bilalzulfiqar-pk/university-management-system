@@ -365,6 +365,9 @@ def create_admin_user(
     stmt = select(User).where(func.lower(User.email) == email.lower())
     existing = db.scalar(stmt)
     if existing is not None:
+        existing.password_hash = hash_password(password)
+        existing.is_active = True
+        commit_or_rollback(db)
         return existing
 
     user = User(

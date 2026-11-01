@@ -78,6 +78,7 @@ export function CourseListPage() {
         : coursesQuery.data?.items.filter((course) => !course.deleted_at) ?? [];
 
   const selectedCourse = coursesQuery.data?.items.find((course) => course.id === selectedId) ?? null;
+  const hasFilters = Boolean(appliedSearch || departmentId);
 
   return (
     <div className="space-y-6">
@@ -128,20 +129,42 @@ export function CourseListPage() {
           </form>
         }
         toolbar={
-          <div className="flex items-center justify-end">
-            <Select
-              className="max-w-[220px]"
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
-              }
-            >
-              {STATUS_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-ink-900">Record visibility</p>
+              <p className="text-sm text-slate-500">
+                Switch to archived courses to access restore or hard-delete actions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setAppliedSearch("");
+                    setDepartmentId(undefined);
+                    setOffset(0);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+              <Select
+                className="sm:max-w-[220px]"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
+                }
+              >
+                {STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
         }
       >

@@ -43,7 +43,7 @@ export function OfferingListPage() {
 
   const coursesQuery = useQuery({
     queryKey: ["courses-options"],
-    queryFn: () => listCourses({ limit: 100, offset: 0 }),
+    queryFn: () => listCourses({ limit: 250, offset: 0 }),
   });
 
   const offeringsQuery = useQuery({
@@ -83,6 +83,7 @@ export function OfferingListPage() {
         : offeringsQuery.data?.items.filter((offering) => !offering.deleted_at) ?? [];
 
   const selectedOffering = offeringsQuery.data?.items.find((offering) => offering.id === selectedId) ?? null;
+  const hasFilters = Boolean(appliedSearch || courseId || term || year);
 
   return (
     <div className="space-y-6">
@@ -149,20 +150,44 @@ export function OfferingListPage() {
           </form>
         }
         toolbar={
-          <div className="flex items-center justify-end">
-            <Select
-              className="max-w-[220px]"
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
-              }
-            >
-              {STATUS_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-ink-900">Record visibility</p>
+              <p className="text-sm text-slate-500">
+                Switch to archived offerings to access restore or hard-delete actions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setAppliedSearch("");
+                    setCourseId(undefined);
+                    setTerm(undefined);
+                    setYear(undefined);
+                    setOffset(0);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+              <Select
+                className="sm:max-w-[220px]"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
+                }
+              >
+                {STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
         }
       >

@@ -51,7 +51,7 @@ export function OfferingFormPage() {
 
   const coursesQuery = useQuery({
     queryKey: ["courses-options"],
-    queryFn: () => listCourses({ limit: 100, offset: 0 }),
+    queryFn: () => listCourses({ limit: 250, offset: 0 }),
   });
 
   const offeringQuery = useQuery({

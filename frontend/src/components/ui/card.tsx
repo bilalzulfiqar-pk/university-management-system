@@ -13,8 +13,8 @@ export function Card({ className, interactive, flush, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-card border border-slate-200/80 bg-white shadow-card",
-        flush ? "" : "p-5 md:p-6",
+        "rounded-card border border-slate-200/80 bg-white shadow-card min-w-0 max-w-full",
+        flush ? "" : "p-4 sm:p-5 md:p-6",
         interactive &&
           "cursor-pointer transition-smooth hover:-translate-y-0.5 hover:shadow-card-hover hover:border-slate-300",
         className,

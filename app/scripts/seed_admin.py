@@ -15,3 +15,7 @@ def main() -> None:
         print(f"Admin user ready: {user.email}")
     finally:
         db.close()
+
+
+if __name__ == "__main__":
+    main()

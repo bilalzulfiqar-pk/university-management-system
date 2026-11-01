@@ -11,7 +11,7 @@ from app.core.constants import AcademicTerm, UserRole
 from app.core.security import hash_password
 from app.db.base import Base  # noqa: F401
 from app.db.session import SessionLocal
-from app.models import AdminAuditLog, Course, CourseOffering, CourseOfferingTeacher, Department, Enrollment, Student, Teacher, User
+from app.models import AdminAuditLog, AuthSession, Course, CourseOffering, CourseOfferingTeacher, Department, Enrollment, Student, Teacher, User
 from app.scripts.demo_seed_dataset import PROGRAMS, TEMP_ACCOUNT_PASSWORD
 
 
@@ -51,6 +51,7 @@ def offering_schedule_for_semester(semester: int) -> tuple[str, int, str, int]:
 
 
 def reset_academic_data(db: Session) -> None:
+    db.execute(delete(AuthSession))
     db.execute(delete(AdminAuditLog))
     db.execute(delete(Enrollment))
     db.execute(delete(CourseOfferingTeacher))

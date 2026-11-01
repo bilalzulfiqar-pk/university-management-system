@@ -24,24 +24,23 @@ export function DashboardHero({ title, description, eyebrow, actions, className 
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-ink-800/40 bg-ink-950 p-6 text-white shadow-md sm:p-8",
+        "relative overflow-hidden rounded-2xl border border-ink-800/40 bg-ink-950 p-5 text-white shadow-md sm:p-7 md:p-8 min-w-0 max-w-full",
         className,
       )}
     >
       {/* Layered navy gradients */}
       <div
         aria-hidden
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(ellipse 600px 320px at 85% -20%, rgba(212, 163, 44, 0.14), transparent 60%), radial-gradient(ellipse 500px 280px at 10% 120%, rgba(51, 93, 125, 0.40), transparent 60%)",
         }}
       />
       {/* Faint crest motif in the corner */}
-      <Crest
-        size={180}
-        className="pointer-events-none absolute -right-8 -top-8 opacity-[0.06]"
-      />
+      <div className="pointer-events-none absolute -right-8 -top-8 overflow-hidden opacity-[0.06]" aria-hidden>
+        <Crest size={180} />
+      </div>
 
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-3">

@@ -65,7 +65,7 @@ T = TypeVar("T")
 class Page(BaseModel, Generic[T]):
     items: list[T]
     total: int
-    limit: int = Field(ge=1, le=100)
+    limit: int = Field(ge=1, le=500)
     offset: int = Field(ge=0)
 
 
@@ -77,6 +77,6 @@ class TimestampedModel(ORMModel):
 
 
 class PaginationParams(BaseModel):
-    limit: int = Field(default=20, ge=1, le=100)
+    limit: int = Field(default=20, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 

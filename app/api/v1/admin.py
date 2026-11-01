@@ -320,7 +320,7 @@ def list_courses(
     search: str | None = None,
     department_id: int | None = None,
     include_deleted: bool = False,
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=20, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> Page[CourseRead]:
     return CourseAdminService(db).list(

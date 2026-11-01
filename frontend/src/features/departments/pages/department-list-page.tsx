@@ -85,7 +85,7 @@ export function DepartmentListPage() {
       <ListPanel
         filters={
           <form
-            className="grid gap-3 lg:grid-cols-[2fr_auto_auto] lg:items-center"
+            className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center"
             onSubmit={(event) => {
               event.preventDefault();
               setOffset(0);
@@ -101,20 +101,45 @@ export function DepartmentListPage() {
             <Button variant="secondary" type="submit">
               Apply filters
             </Button>
-            <Select
-              className="lg:max-w-[200px]"
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
-              }
-            >
-              {STATUS_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
           </form>
+        }
+        toolbar={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold text-ink-900">Record visibility</p>
+              <p className="text-sm text-slate-500">
+                Switch to archived departments to access restore or hard-delete actions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {appliedSearch ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearch("");
+                    setAppliedSearch("");
+                    setOffset(0);
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : null}
+              <Select
+                className="sm:max-w-[200px]"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as (typeof STATUS_FILTERS)[number]["value"])
+                }
+              >
+                {STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
         }
       >
         {query.isLoading ? (

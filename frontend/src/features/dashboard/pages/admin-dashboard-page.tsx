@@ -137,19 +137,19 @@ export function AdminDashboardPage() {
         <StatCard label="Active offerings" value={data.totalOfferings} icon={<Activity />} accent="warning" />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         {/* Quick actions */}
         <Card>
           <CardTitle>Quick actions</CardTitle>
           <CardDescription className="mt-1">
             Run the common setup tasks without digging through the sidebar.
           </CardDescription>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="mt-5 grid min-w-0 gap-3 sm:grid-cols-2">
             {QUICK_ACTIONS.map((action) => (
               <Link
                 key={action.to}
                 to={action.to}
-                className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition-smooth hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
+                className="group flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition-smooth hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ink-50 text-ink-600 ring-1 ring-inset ring-ink-100 transition-smooth group-hover:bg-ink-100">
                   <action.icon className="h-5 w-5" />
