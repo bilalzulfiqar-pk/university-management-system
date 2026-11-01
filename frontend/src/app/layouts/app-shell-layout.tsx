@@ -78,11 +78,14 @@ export function AppShellLayout() {
   };
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      style={{ ["--sidebar-width" as string]: collapsed ? "76px" : "264px" }}
+    >
       {/* Desktop sidebar */}
       <aside
         className="app-shell__sidebar hidden lg:block"
-        style={{ ["--sidebar-width" as string]: collapsed ? "76px" : "264px" }}
+        aria-label="Sidebar navigation"
       >
         <ShellSidebar
           collapsed={collapsed}

@@ -170,6 +170,7 @@ h4 {
 /* App shell layout — sidebar + main column. Sidebar width is driven by
    the `--sidebar-width` CSS var so collapse state can animate smoothly. */
 .app-shell {
+  --sidebar-width: 264px;
   display: flex;
   min-height: 100vh;
   background: transparent;
@@ -186,6 +187,7 @@ h4 {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  transition: margin-left 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-shell__content {
@@ -210,13 +212,20 @@ h4 {
 }
 
 @media (min-width: 1024px) {
-  /* Pin the sidebar so it never scrolls away with the page. Long nav lists
-     scroll internally instead of pushing the user card off-screen. */
+  /* Fix the sidebar rigidly to the viewport so it NEVER scrolls away with the page.
+     It spans full viewport height (100vh) from top to bottom, with internal
+     overflow-y navigation scrolling. */
   .app-shell__sidebar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    align-self: flex-start;
+    bottom: 0;
+    left: 0;
     height: 100vh;
+    z-index: 30;
+  }
+
+  .app-shell__main {
+    margin-left: var(--sidebar-width, 264px);
   }
 }
 
