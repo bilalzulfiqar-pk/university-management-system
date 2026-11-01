@@ -11,3 +11,7 @@ __pycache__/
 # Test artifacts & local QA
 screenshots/
 e2e_tests/
+
+# Local reference & internal docs
+PROJECT_REPORT.md
+temp_hec/
