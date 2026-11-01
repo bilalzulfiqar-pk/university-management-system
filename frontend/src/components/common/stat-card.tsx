@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
@@ -9,12 +10,14 @@ export function StatCard({
   icon,
   helper,
   accent = "ink",
+  to,
 }: {
   label: string;
   value: string | number;
   icon?: ReactNode;
   helper?: string;
   accent?: "ink" | "success" | "warning" | "info" | "danger" | "accent";
+  to?: string;
 }) {
   const accentClasses: Record<string, string> = {
     ink: "bg-ink-50 text-ink-600 ring-ink-100",
@@ -25,14 +28,22 @@ export function StatCard({
     accent: "bg-accent-50 text-accent-600 ring-accent-100",
   };
 
-  return (
-    <Card interactive className="space-y-4">
+  const card = (
+    <Card
+      interactive={Boolean(to)}
+      className={cn(
+        "space-y-4",
+        to && "transition-smooth group-hover:-translate-y-0.5 group-hover:border-slate-300 group-hover:shadow-card-hover",
+      )}
+    >
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-500">{label}</p>
+        <p className={cn("text-sm font-medium text-slate-500", to && "transition-colors group-hover:text-ink-900")}>
+          {label}
+        </p>
         {icon ? (
           <div
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset [&_svg]:h-4 [&_svg]:w-4",
+              "flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-inset transition-transform group-hover:scale-105 [&_svg]:h-4 [&_svg]:w-4",
               accentClasses[accent],
             )}
           >
@@ -46,4 +57,18 @@ export function StatCard({
       </div>
     </Card>
   );
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className="group block min-w-0 max-w-full rounded-card outline-none focus-visible:ring-2 focus-visible:ring-ink-500 focus-visible:ring-offset-2"
+        aria-label={`View ${label} details`}
+      >
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }

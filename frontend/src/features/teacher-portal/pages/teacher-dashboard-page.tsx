@@ -53,18 +53,21 @@ export function TeacherDashboardPage() {
           value={offeringsQuery.data.total}
           icon={<BookOpen />}
           accent="ink"
+          to="/teacher/course-offerings"
         />
         <StatCard
           label="Students across offerings"
           value={totalStudents}
           icon={<UsersRound />}
           accent="info"
+          to="/teacher/course-offerings"
         />
         <StatCard
           label="Department"
           value={profileQuery.data.department_name ?? "—"}
           icon={<Building2 />}
           accent="accent"
+          to="/teacher/profile"
         />
       </div>
 

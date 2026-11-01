@@ -130,11 +130,11 @@ export function AdminDashboardPage() {
 
       {/* KPI row */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Students" value={data.totalStudents} icon={<UsersRound />} accent="ink" />
-        <StatCard label="Teachers" value={data.totalTeachers} icon={<GraduationCap />} accent="info" />
-        <StatCard label="Departments" value={data.totalDepartments} icon={<Building2 />} accent="accent" />
-        <StatCard label="Courses" value={data.totalCourses} icon={<BookOpen />} accent="success" />
-        <StatCard label="Active offerings" value={data.totalOfferings} icon={<Activity />} accent="warning" />
+        <StatCard label="Students" value={data.totalStudents} icon={<UsersRound />} accent="ink" to="/admin/students" />
+        <StatCard label="Teachers" value={data.totalTeachers} icon={<GraduationCap />} accent="info" to="/admin/teachers" />
+        <StatCard label="Departments" value={data.totalDepartments} icon={<Building2 />} accent="accent" to="/admin/departments" />
+        <StatCard label="Courses" value={data.totalCourses} icon={<BookOpen />} accent="success" to="/admin/courses" />
+        <StatCard label="Active offerings" value={data.totalOfferings} icon={<Activity />} accent="warning" to="/admin/course-offerings" />
       </div>
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[1.1fr_0.9fr]">

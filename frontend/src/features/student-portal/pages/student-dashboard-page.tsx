@@ -51,18 +51,21 @@ export function StudentDashboardPage() {
           value={profileQuery.data.current_semester}
           icon={<GraduationCap />}
           accent="ink"
+          to="/student/profile"
         />
         <StatCard
           label="Department"
           value={profileQuery.data.department_name ?? "—"}
           icon={<Building2 />}
           accent="accent"
+          to="/student/profile"
         />
         <StatCard
           label="Enrolled offerings"
           value={offeringsQuery.data.total}
           icon={<BookOpen />}
           accent="info"
+          to="/student/course-offerings"
         />
       </div>
 
