@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary brand scale — deep academic navy.
+        // Primary brand scale - deep academic navy.
         ink: {
           50: "#f3f7fb",
           100: "#e6eef6",

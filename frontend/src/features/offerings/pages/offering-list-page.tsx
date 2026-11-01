@@ -252,7 +252,7 @@ export function OfferingListPage() {
                           </Badge>
                         </Td>
                         <Td className="tabular">{offering.section}</Td>
-                        <Td className="tabular text-slate-500">{offering.capacity ?? "—"}</Td>
+                        <Td className="tabular text-slate-500">{offering.capacity ?? "-"}</Td>
                         <Td className="tabular">{offering.teacher_ids.length}</Td>
                         <Td className="tabular">{offering.student_count}</Td>
                         <Td>
@@ -308,7 +308,7 @@ export function OfferingListPage() {
                     }
                     badges={<StatusPill archived={Boolean(offering.deleted_at)} />}
                     fields={[
-                      { label: "Capacity", value: offering.capacity ?? "—" },
+                      { label: "Capacity", value: offering.capacity ?? "-" },
                       { label: "Teachers", value: offering.teacher_ids.length },
                       { label: "Students", value: offering.student_count },
                       { label: "Updated", value: formatDate(offering.updated_at) },

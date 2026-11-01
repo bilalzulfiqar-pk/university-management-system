@@ -21,7 +21,7 @@ export function PaginationControls({
   return (
     <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
       <p className="tabular text-xs sm:text-sm">
-        Showing <span className="font-semibold text-ink-900">{from}</span>–
+        Showing <span className="font-semibold text-ink-900">{from}</span> to{" "}
         <span className="font-semibold text-ink-900">{to}</span> of{" "}
         <span className="font-semibold text-ink-900">{total}</span>
       </p>

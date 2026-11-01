@@ -18,7 +18,7 @@ export interface RouteMeta {
   title: string;
   description?: string;
   section: string;
-  /** Breadcrumb label — defaults to `title`. */
+  /** Breadcrumb label - defaults to `title`. */
   crumb?: string;
 }
 

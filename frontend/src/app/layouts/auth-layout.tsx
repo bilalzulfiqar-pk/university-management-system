@@ -24,7 +24,7 @@ const TRUST_POINTS = [
 export function AuthLayout() {
   return (
     <main className="relative grid min-h-screen lg:grid-cols-2">
-      {/* Brand panel — desktop only */}
+      {/* Brand panel (desktop only) */}
       <aside className="relative hidden overflow-hidden bg-ink-950 lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div
           aria-hidden

@@ -10,7 +10,7 @@ const COLLAPSE_KEY = "ums:sidebar-collapsed";
 
 function readInitialCollapsed(): boolean {
   if (typeof window === "undefined") return false;
-  // Only collapse on large screens — never start collapsed on tablet where the
+  // Only collapse on large screens - never start collapsed on tablet where the
   // sidebar is a drawer.
   if (window.matchMedia("(min-width: 1024px)").matches) {
     try {

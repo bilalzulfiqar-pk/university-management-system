@@ -9,7 +9,7 @@ export interface MobileRecordField {
 
 /**
  * Compact stacked card used to render list rows on mobile (below `md`).
- * Paired with the desktop `<Table>` — both consume the same row data and the
+ * Paired with the desktop `<Table>` - both consume the same row data and the
  * same `RowActions` kebab so behavior stays consistent across breakpoints.
  */
 export function MobileRecordCard({

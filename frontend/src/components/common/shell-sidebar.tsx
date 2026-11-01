@@ -37,7 +37,7 @@ export function ShellSidebar({ collapsed, onNavigate, onToggleCollapse }: ShellS
         </button>
       </div>
 
-      {/* Nav sections — fills the available height, scrolls internally if needed */}
+      {/* Nav sections - fills the available height, scrolls internally if needed */}
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Primary">
         <div className="space-y-6">
           {sections.map((section) => (

@@ -1,6 +1,6 @@
 # Frontend
 
-A premium, role-based operations dashboard for the University Management System — built for fast, trustworthy admin/teacher/student workflows.
+A premium, role-based operations dashboard for the University Management System, built for fast, trustworthy admin/teacher/student workflows.
 
 ## Stack
 

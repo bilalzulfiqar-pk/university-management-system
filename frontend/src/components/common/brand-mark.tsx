@@ -5,7 +5,7 @@ interface BrandMarkProps {
   size?: number;
   /** Show the wordmark beside the crest. */
   showWordmark?: boolean;
-  /** Compact wordmark — drops the "University Management System" sub-label. */
+  /** Compact wordmark - drops the "University Management System" sub-label. */
   compact?: boolean;
   /** Visual treatment: "light" for dark backgrounds (sidebar/auth), "dark" for light backgrounds. */
   tone?: "light" | "dark";

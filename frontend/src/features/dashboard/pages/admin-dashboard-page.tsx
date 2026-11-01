@@ -96,7 +96,7 @@ export function AdminDashboardPage() {
     );
   }
 
-  // Onboarding checklist — derived from totals so a fresh instance has purpose.
+  // Onboarding checklist - derived from totals so a fresh instance has purpose.
   const checklist = [
     { label: "Add a department", done: data.totalDepartments > 0, to: "/admin/departments/new" },
     { label: "Create a course", done: data.totalCourses > 0, to: "/admin/courses/new" },

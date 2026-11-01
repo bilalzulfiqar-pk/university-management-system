@@ -64,7 +64,7 @@ export function TeacherDashboardPage() {
         />
         <StatCard
           label="Department"
-          value={profileQuery.data.department_name ?? "—"}
+          value={profileQuery.data.department_name ?? "-"}
           icon={<Building2 />}
           accent="accent"
           to="/teacher/profile"

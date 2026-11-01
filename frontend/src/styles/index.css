@@ -93,7 +93,7 @@ h4 {
 }
 
 /* Global focus-visible ring for accessibility. The ring follows the element's
-   own border-radius via box-shadow — do NOT set border-radius here, or it
+   own border-radius via box-shadow - do NOT set border-radius here, or it
    overrides component radii (e.g. inputs would square off on focus). */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: none;
@@ -167,7 +167,7 @@ h4 {
   }
 }
 
-/* App shell layout — sidebar + main column. Sidebar width is driven by
+/* App shell layout - sidebar + main column. Sidebar width is driven by
    the `--sidebar-width` CSS var so collapse state can animate smoothly. */
 .app-shell {
   --sidebar-width: 264px;

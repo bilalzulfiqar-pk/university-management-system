@@ -6,7 +6,7 @@ interface RouteEntry {
   path: string;
   title: string;
   description?: string;
-  /** Breadcrumb segments — first is treated as Home. */
+  /** Breadcrumb segments - first is treated as Home. */
   crumbs: string[];
 }
 

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils/cn";
 
 interface AvatarProps {
-  /** Display name — used to derive initials and deterministic color. */
+  /** Display name - used to derive initials and deterministic color. */
   name: string;
   /** Optional secondary identifier (e.g. email) mixed into the color hash. */
   seed?: string;

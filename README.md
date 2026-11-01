@@ -1,257 +1,233 @@
 # University Management System (UMS)
 
-<div align="center">
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0A0A0A)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-green?logo=open-source-initiative&logoColor=white)
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=0A0A0A)
-![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-23%2F23%20Passing-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)
-![Security](https://img.shields.io/badge/Security-Hardened%20%7C%202FA%20%7C%20CSRF-blue?style=for-the-badge&logo=shield&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+A full-stack, security-first academic operations platform built with FastAPI, PostgreSQL 16, Redis 7, React 19, and TypeScript.
 
-<p align="center">
-  <strong>An enterprise-grade, security-hardened academic operations platform built with FastAPI, PostgreSQL 16, Redis 7, React 19, and TypeScript.</strong>
-</p>
-
-<p align="center">
-  <a href="#-live-showcase--demo-credentials">Demo Credentials</a> •
-  <a href="#-system-architecture--security-model">Security Model</a> •
-  <a href="#-feature-matrix">Feature Matrix</a> •
-  <a href="#-quickstart--local-setup">Quickstart</a> •
-  <a href="#-responsive-multi-screen-design">Responsive UI</a> •
-  <a href="#-testing--verification">Verification</a>
-</p>
-
-</div>
+The system models real-world university workflows - managing academic departments, course catalogs, term-specific course offerings, section capacities, student enrollments, faculty assignments, and compliance audit logging - anchored by an enterprise zero-trust security architecture.
 
 ---
 
-## 🌟 Executive Overview
+## Highlights
 
-The **University Management System (UMS)** is a production-ready, full-stack academic operations platform modeled on realistic higher-education requirements. Moving beyond conventional CRUD tutorials, UMS models **Course Offerings** as the central operational entity—allowing courses to have multiple term-specific, section-controlled, and capacity-constrained instances taught by designated faculty and enrolled by students.
-
-The application is engineered with a strict **security-first philosophy**:
-- **HttpOnly Cookie Sessions:** Zero storage of JWT tokens in browser `localStorage` or `sessionStorage`.
-- **Stateful Double-Submit CSRF:** Cryptographically verified CSRF cookies matched against `X-CSRF-Token` headers and PostgreSQL session secrets.
-- **Refresh Token Rotation (RTR):** Automatic single-use refresh token rotation with family revocation on reuse attempts.
-- **Time-based One-Time Passwords (TOTP):** In-app 2FA setup with real-time SVG QR code generation (Google Authenticator / 1Password compatible).
-- **Strict Role-Based Access Control (RBAC):** Three distinct role workspaces (`ADMIN`, `TEACHER`, `STUDENT`) with server-enforced route guards and forced temporary credential quarantine.
-- **Adaptive Multi-Screen UX:** Responsive design audited across Mobile (`375px`), Tablet (`768px`), Laptop (`1280px`), and Widescreen (`1920px`) with zero document overflow.
-
----
-
-## 🔑 Live Showcase & Demo Credentials
-
-When running the application locally (`http://localhost:5173`), you can test every persona using pre-seeded, HEC-aligned demo accounts:
-
-| Role | Email | Password | Landing Workspace | Capabilities Demonstrated |
-| :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@example.com` | `ChangeMe123!` | `/admin/dashboard` | Full university administration: CRUD, relational deletion blocks, capacity ceilings, audit logs, and 2FA. |
-| **Teacher** | `ahmed.raza.bscs@example.com` | `Welcome123!` | `/teacher/dashboard` | Assigned faculty portal: view assigned offerings, browse section rosters, update profile, strict RBAC isolation. |
-| **Student** | `abdullah.khan.bscs@example.com` | `Welcome123!` | `/student/dashboard` | Enrolled student portal: view current term schedule, enrolled course sections, profile self-service. |
-| **Quarantine Demo** | `areeba.raza.bscs@example.com` | `Welcome123!` | `/change-password` | **Forced First-Login Quarantine:** Temporary credentials immediately lock all routes and force a password update. |
-
-### Application Endpoints:
-- **Frontend Web Application:** [http://localhost:5173](http://localhost:5173)
-- **FastAPI OpenAPI Swagger Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc Technical Specification:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **Health Check Probe:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- **Zero-Trust Security Architecture**: All authentication tokens (`ums_access`, `ums_refresh`) are issued in `HttpOnly`, `SameSite=Lax` cookies. JavaScript storage APIs (`localStorage`, `sessionStorage`) never hold auth credentials, mitigating token exfiltration via Cross-Site Scripting (XSS).
+- **Stateful Double-Submit CSRF Defense**: Mutating operations (`POST`, `PATCH`, `DELETE`) require a cryptographic CSRF token delivered via cookie and returned via the `X-CSRF-Token` header, validated against active session secrets in PostgreSQL.
+- **Session Revocation & Versioning**: Immediate, cluster-wide session invalidation via `User.token_version` tracking in PostgreSQL and Redis-backed token denylists. Changing a password or logging out immediately revokes all issued tokens across all devices.
+- **Refresh Token Rotation (RTR)**: Single-use refresh token exchange with automated session family invalidation if a previously consumed token is re-submitted.
+- **Two-Factor Authentication (TOTP)**: In-app 2FA enrollment with real-time SVG QR code rendering, compatible with Google Authenticator, 1Password, and standard RFC 6238 authenticators.
+- **Quarantine Credential State Machine**: Server-enforced temporary credential quarantine redirects users flagged with `must_change_password=True` directly to password rotation before granting access to protected application routes.
+- **Course Offering Centricity**: Courses are decoupled into operational offerings defined by academic terms (`SPRING`, `SUMMER`, `FALL`), year, and section identifier, enforcing physical seat capacities and duplicate enrollment prevention.
+- **Relational Integrity & Safety Guards**: Deletion constraints prevent removing departments with active faculty, students, or courses. Soft-delete and restore pipelines preserve audit continuity.
+- **Multi-Tier Rate Limiting**: Redis-backed fixed-window rate limiters mitigate brute-force attempts on login endpoints, password resets, and write operations.
+- **Modern Client Architecture**: React 19 single-page application with fixed-viewport navigation, command palette (`Ctrl+K` / `⌘K`), TanStack Query state caching, and responsive layouts across desktop, tablet, and mobile devices.
 
 ---
 
-## 🛡️ System Architecture & Security Model
+## Tech Stack
 
-```
- ─────────────────────────────────────────────────────────────────────────────
-                          UMS SECURITY ARCHITECTURE
- ─────────────────────────────────────────────────────────────────────────────
+### Backend
+- **FastAPI 0.115** (Python 3.11 / 3.12)
+- **SQLAlchemy 2.0** (Synchronous ORM with connection pooling)
+- **Pydantic v2** (Strict schema validation and settings management)
+- **Alembic 1.14** (Database migration management)
+- **Passlib & Argon2-cffi** (Password hashing)
+- **PyOTP** (RFC 6238 TOTP two-factor authentication)
+- **PyJWT** (Cryptographic JSON Web Tokens)
 
-   [ Browser Client (React 19 SPA) ]
-             │
-             │  1. Credentials + Origin Header
-             ▼
-   [ FastAPI Security Gateway ]
-             │
-             ├──► [ Argon2id Password Verification ]
-             ├──► [ Optional TOTP 2FA Verification (PyOTP) ]
-             │
-             │  2. Issue Stateful Session
-             ▼
-   [ Cookie & Session Engine ]
-             ├──► Set Cookie: `ums_access`  (HttpOnly, Secure, SameSite=Lax, 15m)
-             ├──► Set Cookie: `ums_refresh` (HttpOnly, Secure, SameSite=Lax, 7d)
-             ├──► Set Cookie: `ums_csrf`    (Readable, Secure, SameSite=Lax)
-             └──► PostgreSQL `auth_sessions`: Record Session ID + CSRF Secret
-             │
-             │  3. Mutating API Requests (POST / PATCH / DELETE)
-             ▼
-   [ Security Middleware Pipeline ]
-             ├──► Origin Verification (Matches TRUSTED_ORIGINS)
-             ├──► Fixed-Window Rate Limiting (Redis 7)
-             ├──► Double-Submit CSRF Check (ums_csrf cookie == X-CSRF-Token header == db.csrf_secret)
-             └──► Token Version Denylist Check (db.users.token_version)
-             │
-             ▼
-   [ Protected Academic Business Logic ]
- ─────────────────────────────────────────────────────────────────────────────
+### Frontend
+- **React 19** & **TypeScript 5**
+- **Vite 4.5** (Fast bundling and code-splitting)
+- **Tailwind CSS 3.4** (Custom design system tokens)
+- **React Router DOM 7** (Data router with auth and quarantine guards)
+- **TanStack Query v5** (Server state synchronization and caching)
+- **React Hook Form 7** & **Zod 3** (Client-side validation)
+- **Lucide React** (Interface iconography)
+
+### Data & Infrastructure
+- **PostgreSQL 16** (Relational data store, audit trails, and foreign key constraints)
+- **Redis 7** (Fixed-window rate limiting and session blacklisting)
+- **Docker Compose** (Containerized database and cache orchestration)
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    Client["React 19 Single Page Application"]
+
+    subgraph SecurityGateway ["FastAPI Security Gateway & Middleware"]
+        CORS["Origin Verification & CORS"]
+        RateLimiter["Redis Fixed-Window Rate Limiter"]
+        CSRFGuard["Double-Submit CSRF Validator"]
+        AuthGuard["JWT & Token Version Validator"]
+    end
+
+    subgraph DomainServices ["Application Services"]
+        AuthService["Authentication & TOTP Service"]
+        DeptService["Department Service"]
+        CourseService["Course & Offering Service"]
+        EnrollService["Enrollment & Capacity Service"]
+        AuditService["Structured Audit Logger"]
+    end
+
+    subgraph Persistence ["Persistence & Cache"]
+        PG[("PostgreSQL 16\n(Relational Schema & Audit Logs)")]
+        Redis[("Redis 7\n(Token Denylist & Rate Limits)")]
+    end
+
+    Client -->|HTTPS + HttpOnly Cookies| CORS
+    CORS --> RateLimiter
+    RateLimiter --> CSRFGuard
+    CSRFGuard --> AuthGuard
+    AuthGuard --> DomainServices
+
+    AuthService <--> Redis
+    AuthService <--> PG
+    DeptService <--> PG
+    CourseService <--> PG
+    EnrollService <--> PG
+    AuditService --> PG
 ```
 
-### Security Defenses Implemented:
-1. **Zero-localStorage Token Architecture:** Tokens are never exposed to JavaScript storage APIs, eliminating token exfiltration via Cross-Site Scripting (XSS).
-2. **Double-Submit CSRF Defense:** Every mutating request (`POST`, `PATCH`, `DELETE`) requires the client to extract the `ums_csrf` cookie value and submit it via the `X-CSRF-Token` header. The backend validates that both match and correspond to the active `AuthSession.csrf_secret`.
-3. **Session Revocation & Token Versioning:** Global password changes and logouts increment `User.token_version`, immediately invalidating all outstanding access tokens across all devices.
-4. **Refresh Token Rotation (RTR):** Refreshing an access token revokes the old refresh token and issues a new pair. If a revoked refresh token is re-submitted, the entire session family is instantly destroyed.
-5. **Multi-Tier Rate Limiting:** Redis-backed fixed-window limiters safeguard endpoints against abuse:
-   - Login IP Rate Limit: 20 attempts / min
-   - Login Account Rate Limit: 5 attempts / min
-   - Password Change Rate Limit: 5 attempts / min
-   - General API Write Limit: 120 requests / min
+---
+
+## Security Architecture
+
+Security is the primary engineering focus of this system. Rather than relying on simple JWT storage in client storage, the system implements defense-in-depth protection across transport, authentication, session lifecycle, and data authorization.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Browser Client (React)
+    participant GW as FastAPI Gateway & Middleware
+    participant PG as PostgreSQL (auth_sessions)
+    participant Redis as Redis (Token Denylist)
+
+    User->>GW: POST /api/v1/auth/login (Email, Password, TOTP)
+    GW->>GW: Verify Argon2id Hash & RFC 6238 Code
+    GW->>PG: Create AuthSession record (csrf_secret, user_agent, ip)
+    GW-->>User: Set-Cookie: ums_access (HttpOnly, SameSite=Lax, 15m)<br/>Set-Cookie: ums_refresh (HttpOnly, SameSite=Lax, 7d)<br/>Set-Cookie: ums_csrf (Readable, SameSite=Lax)
+
+    Note over User,GW: Subsequent Mutating Request (POST / PATCH / DELETE)
+    User->>GW: Mutating Request + Cookie: ums_access + Header: X-CSRF-Token
+    GW->>Redis: Check user.token_version against active denylist
+    GW->>PG: Match ums_csrf cookie == X-CSRF-Token header == session.csrf_secret
+    GW->>GW: Verify RBAC permissions & execute transaction
+    GW->>PG: Write structured AuditLog record
+    GW-->>User: 200 OK Response
+```
+
+### 1. Zero-Storage Token Pipeline
+- Access tokens (`ums_access`, 15-minute TTL) and refresh tokens (`ums_refresh`, 7-day TTL) are stored exclusively in `HttpOnly`, `SameSite=Lax` browser cookies.
+- JavaScript cannot read or extract these cookies, eliminating the primary attack vector for token theft via Cross-Site Scripting (XSS).
+
+### 2. Double-Submit CSRF Verification
+- On authentication, a random CSRF secret is generated, stored in `AuthSession.csrf_secret`, and set as a readable cookie (`ums_csrf`).
+- For every state-changing request (`POST`, `PUT`, `PATCH`, `DELETE`), the client must send this token in the `X-CSRF-Token` header.
+- The backend verifies that the header token matches the cookie token and corresponds to the active session in PostgreSQL.
+
+### 3. Immediate Session Revocation & Versioning
+- Users maintain a `token_version` integer column.
+- Whenever a user updates their password, logs out globally, or is deactivated by an administrator, their `token_version` is incremented.
+- Outdated access tokens are immediately rejected by backend dependencies without waiting for the 15-minute JWT expiration.
+
+### 4. Refresh Token Rotation (RTR) & Reuse Detection
+- Refreshing an access token revokes the current refresh token and issues a new pair.
+- If a previously invalidated refresh token is presented, the system detects a potential token replay attack, terminates the entire session family, and logs an alert.
+
+### 5. Multi-Tier Rate Limiting
+- Built on Redis fixed-window counters:
+  - **Login IP Limit:** 20 attempts per minute.
+  - **Login Account Limit:** 5 attempts per minute (prevents credential stuffing).
+  - **Password Change Limit:** 5 attempts per minute.
+  - **Write Operation Limit:** 120 requests per minute.
 
 ---
 
-## 🚀 Feature Matrix
+## Core Capabilities
 
-### 1. Administrative Controls (`/admin`)
-- **Department Management:** Create, search, filter, edit, and soft-delete academic departments. Protected by relational deletion guards that prevent archiving departments with active students, teachers, or courses.
-- **Course Catalog:** Standardized curriculum courses (HEC-aligned: BSCS, BSSE, BSIT) with credit hours and code validation (`NAME_PATTERN`, `CODE_PATTERN`).
-- **Course Offering Operations:** Real operational sections tied to terms (`SPRING`, `SUMMER`, `FALL`), year, and section identifier.
-  - Faculty Assignment: Map instructors to sections.
-  - Student Enrollment: Enroll students with immediate duplicate protection.
-  - Capacity Ceilings: Enforce physical class capacity limits (`OFFERING_FULL` conflict rejection).
-- **Directory Lifecycle:** Provision students and faculty with temporary credentials, perform soft deletes (`DELETE`), inspect archives, restore records (`POST .../restore`), and execute guarded hard deletes (`DELETE .../hard`).
-- **Structured Audit Trails:** Filterable administrative compliance history tracking exact actor, entity type, HTTP method, and human-readable event descriptions.
+### Administrative Operations (`/admin`)
+- **Department Management:** Create, update, filter, and soft-delete academic departments. Protected by relational checks that prevent deleting departments that currently house faculty, students, or courses.
+- **Curriculum Catalog:** Maintain standardized academic course definitions (e.g., BSCS, BSSE, BSIT) with credit hours and code format validation.
+- **Course Offering Operations:** Schedule term offerings with designated section codes (`S1-A`, `S1-B`), term designations (`SPRING`, `SUMMER`, `FALL`), year, and physical seat capacity bounds.
+- **Faculty Assignment & Roster Management:** Assign teachers to sections; enroll students with automatic duplicate enrollment rejection and capacity ceiling enforcement (`OFFERING_FULL`).
+- **User Directory Lifecycle:** Provision teachers and students with temporary credentials, perform soft deletes, inspect archives, restore records, or execute guarded permanent deletions.
+- **Compliance Audit Logging:** Structured audit trails capturing the exact actor ID, target entity, HTTP method, client IP, and human-readable event description.
 
-### 2. Teacher Portal (`/teacher`)
+### Faculty Portal (`/teacher`)
 - **Dashboard Overview:** Real-time metrics displaying assigned courses and total enrolled students.
-- **Assigned Course Sections:** List of term offerings currently assigned to the instructor.
-- **Section Rosters:** Isolated roster view displaying enrolled students with names, roll numbers, emails, and current semesters.
-- **Faculty Profile:** Self-service profile review with account security status.
+- **Assigned Offerings:** View assigned course sections and term schedules.
+- **Section Rosters:** Isolated class rosters detailing enrolled students, roll numbers, academic emails, and current semesters.
+- **Profile Self-Service:** View faculty record, department affiliation, and security status.
 
-### 3. Student Portal (`/student`)
-- **Dashboard Overview:** Semester metrics, department affiliation, and enrolled credit summary.
-- **My Enrollments:** Enrolled course offerings filtered to the authenticated student.
-- **Section Details:** View course section information, term schedule, and assigned instructors.
-- **Student Profile:** Self-service profile review.
+### Student Portal (`/student`)
+- **Dashboard Overview:** Academic semester progress, department affiliation, and enrolled credit hours.
+- **Course Schedule:** View enrolled course sections for the current academic term.
+- **Offering Details:** Inspect section details, assigned instructors, and meeting metadata.
+- **Profile Self-Service:** View student record and account information.
 
-### 4. Account Security & Credential Quarantine (`/security` & `/change-password`)
-- **Quarantine Gate:** Forced first-login password rotation redirects any user with temporary credentials (`must_change_password=True`) to `/change-password` before granting access to protected routes.
-- **TOTP Two-Factor Setup:** In-app setup with QR code display, secret key entry, code verification, and persistent session state.
-
----
-
-## 📱 Responsive Multi-Screen Design
-
-The frontend was built and verified to provide an optimal experience across four standardized device classes:
-
-| Screen Class | Viewport Size | Primary Layout Behavior | Overflow Status |
-| :--- | :--- | :--- | :--- |
-| **Mobile** | `375 x 812` | Collapsible navigation drawer; data tables transform into stacked touch cards (`MobileRecordCard`); vertical modal action stacking. | **0 Overflows** |
-| **Tablet** | `768 x 1024` | Sidebar drawer; responsive two-column grid layouts; contained horizontal scrolling tables (`overflow-x-auto rounded-xl`). | **0 Overflows** |
-| **Laptop** | `1280 x 800` | Fixed collapsible sidebar; full data tables; multi-metric KPI hero grids. | **0 Overflows** |
-| **Widescreen** | `1920 x 1080` | Max-width centered container (`max-w-[1440px]`); wide typography; full administrative audit tables. | **0 Overflows** |
+### Identity & Account Security (`/security` & `/change-password`)
+- **Credential Quarantine:** Users provisioned with temporary passwords (`must_change_password=True`) are locked out of general routes and automatically redirected to `/change-password`.
+- **Two-Factor Authentication (TOTP):** In-app 2FA onboarding with SVG QR code generation, manual secret backup, code verification, and session status tracking.
 
 ---
 
-## 💻 Tech Stack
+## Relational Data Model
 
-### Backend Stack
-- **Framework:** FastAPI 0.115 (Python 3.11 / 3.12)
-- **Database:** PostgreSQL 16 (Synchronous SQLAlchemy 2.0.36)
-- **Migrations:** Alembic 1.14.0
-- **Cache & Rate Limiting:** Redis 7 (`redis-py`)
-- **Security & Cryptography:** Argon2-cffi, PyJWT, PyOTP (TOTP 2FA)
-- **Validation:** Pydantic 2.x Settings & Schemas
-- **Testing:** Pytest, HTTPX, Coverage
-
-### Frontend Stack
-- **Framework:** React 19.2.5 + TypeScript 6.0.2
-- **Build Tool:** Vite 4.5.14 (Per-route `React.lazy` code-splitting)
-- **Styling:** Tailwind CSS 3.4.17 (Custom design token system)
-- **Routing:** React Router DOM 7.14.2 (Data router with auth guards)
-- **Server State:** TanStack Query v5.100.1
-- **Forms & Validation:** React Hook Form 7.73.1 + Zod 4.3.6
-- **Notifications & Icons:** Sonner toasts + Lucide-React
-
----
-
-## 📂 Project Structure
-
-```text
-university-management-system/
-├── alembic/                      # Database migrations
-│   └── versions/                 # Versioned migration scripts (0001 to 0005)
-├── app/                          # FastAPI Backend Application
-│   ├── api/                      # Routing & dependencies
-│   │   ├── deps.py               # Dependency injection (DB, Session, Role)
-│   │   └── v1/                   # API v1 routes (admin, auth, me)
-│   ├── core/                     # Core system configuration
-│   │   ├── audit.py              # Audit logging context manager
-│   │   ├── config.py             # Pydantic v2 application settings
-│   │   ├── constants.py          # Enums (UserRole, AcademicTerm)
-│   │   ├── cookies.py            # HttpOnly cookie helpers
-│   │   ├── error_handlers.py     # JSON exception serialization handlers
-│   │   ├── exceptions.py         # Custom application exceptions
-│   │   ├── middleware.py         # Rate limiting, CSRF & request tracking
-│   │   ├── rate_limit.py         # Redis fixed-window rate limiter
-│   │   └── security.py           # Argon2 hashing & JWT utilities
-│   ├── db/                       # Database engine and SessionLocal
-│   ├── models/                   # SQLAlchemy ORM models
-│   ├── schemas/                  # Pydantic request/response schemas
-│   ├── scripts/                  # Administrative CLI scripts (seed_demo_data, seed_admin)
-│   ├── services/                 # Business logic and domain services
-│   └── main.py                   # Application entrypoint & middleware mounting
-├── frontend/                     # React 19 + TypeScript SPA
-│   ├── public/                   # Static assets, brand icons, favicon
-│   ├── src/
-│   │   ├── app/                  # App shell layouts, router & auth guards
-│   │   ├── components/           # Reusable UI components (buttons, modals, tables)
-│   │   ├── features/             # Domain modules (auth, dashboard, departments, etc.)
-│   │   ├── lib/                  # API client, formatters, utilities, design tokens
-│   │   └── styles/               # Tailwind CSS index stylesheet
-│   ├── package.json              # Frontend dependencies and npm scripts
-│   └── vite.config.ts            # Vite proxy & build configuration
-├── tests/                        # Automated Pytest suite (23 suites)
-├── docker-compose.yml            # PostgreSQL 16 & Redis 7 container services
-├── pyproject.toml                # Python package metadata & dependencies
-├── .env.example                  # Environment template
-└── README.md                     # Comprehensive project documentation
+```mermaid
+erDiagram
+    DEPARTMENT ||--o{ COURSE : contains
+    DEPARTMENT ||--o{ STUDENT_PROFILE : enrolls
+    DEPARTMENT ||--o{ TEACHER_PROFILE : employs
+    COURSE ||--o{ COURSE_OFFERING : instantiates
+    TEACHER_PROFILE ||--o{ COURSE_OFFERING : instructs
+    STUDENT_PROFILE ||--o{ ENROLLMENT : registers
+    COURSE_OFFERING ||--o{ ENROLLMENT : accommodates
+    USER ||--o| STUDENT_PROFILE : profiles
+    USER ||--o| TEACHER_PROFILE : profiles
+    USER ||--o{ AUTH_SESSION : maintains
+    USER ||--o{ AUDIT_LOG : generates
 ```
 
 ---
 
-## ⚡ Quickstart & Local Setup
+## Quickstart & Local Setup
 
 ### Prerequisites
-- **Docker Desktop** (running)
+- **Docker Desktop** (Engine 24+)
 - **Python 3.11+**
 - **Node.js 18+** & npm
 
-### 1. Clone the Repository & Configure Environment
+### 1. Clone & Environment Configuration
 ```bash
 git clone https://github.com/<your-username>/university-management-system.git
 cd university-management-system
 
-# Create environment configuration
+# Create local environment file
 cp .env.example .env
 ```
 
-*Note on Redis Port:* If running on Windows with Hyper-V, Redis is mapped to host port `6300` in `docker-compose.yml` (`REDIS_URL=redis://127.0.0.1:6300/0`) to avoid dynamic socket reservation conflicts.
+> **Note on Redis Port:** `docker-compose.yml` maps Redis to host port `6300` (`REDIS_URL=redis://127.0.0.1:6300/0`) to prevent port conflicts with Windows Hyper-V dynamic port exclusions.
 
 ### 2. Start PostgreSQL & Redis Containers
 ```bash
 docker compose up -d db redis
 ```
 
-### 3. Setup Python Backend Environment
+### 3. Setup Python Backend
 ```bash
 # Create and activate virtual environment
 python -m venv .venv
 
-# Windows PowerShell:
+# Windows (PowerShell):
 .venv\Scripts\Activate.ps1
 # Linux / macOS:
 # source .venv/bin/activate
@@ -260,10 +236,10 @@ python -m venv .venv
 pip install --upgrade pip
 pip install -e ".[dev]"
 
-# Apply database migrations
+# Run database migrations
 alembic upgrade head
 
-# Seed clean HEC academic dataset & Admin user
+# Seed demo dataset and initial administrator
 python -m app.scripts.seed_demo_data --reset
 python -m app.scripts.seed_admin
 
@@ -272,42 +248,101 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ### 4. Setup React Frontend
-In a new terminal window:
+In a separate terminal:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser and log in as `admin@example.com` (`ChangeMe123!`).
+### Local Service Ports
+- **Web Application:** [http://localhost:5173](http://localhost:5173)
+- **API Documentation (Swagger UI):** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **API Specification (ReDoc):** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Health Check Probe:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
 ---
 
-## 🧪 Testing & Verification
+## Demo Accounts
 
-The codebase includes comprehensive automated testing across backend contracts, static security scanning, frontend typechecking, and end-to-end user journeys:
+The database seed script generates pre-configured accounts for testing each role:
 
-### 1. Backend Unit & Integration Tests (23 Suites)
+| Role | Email | Password | Landing Route | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@example.com` | `ChangeMe123!` | `/admin/dashboard` | Full administrative control: departments, courses, offerings, directories, and audit logs. |
+| **Teacher** | `ahmed.raza.bscs@example.com` | `Welcome123!` | `/teacher/dashboard` | Assigned faculty portal: course offerings, student rosters, and profile review. |
+| **Student** | `abdullah.khan.bscs@example.com` | `Welcome123!` | `/student/dashboard` | Student portal: enrolled course sections, term schedule, and academic profile. |
+| **Quarantine Demo** | `areeba.raza.bscs@example.com` | `Welcome123!` | `/change-password` | Temporary credentials test: route quarantine forces immediate password change. |
+
+---
+
+## Verification & Testing
+
+The repository includes a complete verification suite covering unit contracts, security posture, and static analysis:
+
+### 1. Backend Unit & Integration Tests
 ```bash
 pytest -q
 ```
-*Output: `23 passed in ~6.5s` covering authentication, refresh rotation, rate limiting, relational constraints, soft delete/restore, and audit logging.*
+Runs 23 automated test suites covering authentication, token rotation, relational constraint enforcement, offering capacity checks, soft-delete restoration, and audit logging.
 
-### 2. Static Security & Dependency Audit
+### 2. Static Security & Dependency Scanning
 ```bash
 python -m app.scripts.security_checks
 ```
-*Executes `bandit -q -r app`, `pip-audit`, `npm run audit:runtime`, and scans the frontend codebase to verify zero `localStorage` token storage.*
+Executes Bandit AST security scanning across `app/`, `pip-audit` for Python CVEs, `npm audit` for frontend runtime dependencies, and verifies zero `localStorage` token storage.
 
-### 3. Frontend TypeScript & Linter Verification
+### 3. Frontend Typecheck & Build
 ```bash
 cd frontend
 npm run check
 ```
-*Executes ESLint and `tsc -b && vite build` verifying zero TypeScript or bundling errors.*
+Runs ESLint, TypeScript project references (`tsc -b`), and Vite production bundling to verify zero compilation or lint errors.
 
 ---
 
-## 📄 License
+## Project Structure
 
-This project is licensed under the terms of the [MIT License](LICENSE).
+```text
+university-management-system/
+├── alembic/                      # Database migration revisions (0001 to 0005)
+├── app/                          # FastAPI backend application
+│   ├── api/                      # Route definitions and dependency injection
+│   │   ├── deps.py               # Session, database, and role dependencies
+│   │   └── v1/                   # Versioned API routes (admin, auth, me)
+│   ├── core/                     # Application infrastructure & security configuration
+│   │   ├── audit.py              # Audit logging context manager
+│   │   ├── config.py             # Pydantic v2 application settings
+│   │   ├── constants.py          # Enums (UserRole, AcademicTerm)
+│   │   ├── cookies.py            # HttpOnly cookie helpers
+│   │   ├── error_handlers.py     # Custom exception serialization handlers
+│   │   ├── exceptions.py         # Domain error definitions
+│   │   ├── middleware.py         # CSRF, rate limiting, and request ID middleware
+│   │   ├── rate_limit.py         # Redis fixed-window rate limiter
+│   │   └── security.py           # Argon2 hashing & JWT utilities
+│   ├── db/                       # Engine setup and SessionLocal factory
+│   ├── models/                   # SQLAlchemy ORM database models
+│   ├── schemas/                  # Pydantic request and response schemas
+│   ├── scripts/                  # Administrative CLI scripts (seed_demo_data, seed_admin)
+│   ├── services/                 # Domain business logic services
+│   └── main.py                   # Application initialization and lifespan
+├── frontend/                     # React 19 + TypeScript single-page application
+│   ├── src/
+│   │   ├── app/                  # Application shell layout, router, and auth providers
+│   │   ├── components/           # Reusable UI primitives and layout components
+│   │   ├── features/             # Feature modules (admin, teacher, student, auth)
+│   │   ├── lib/                  # API client, route registry, and formatters
+│   │   └── styles/               # Tailwind CSS index stylesheet
+│   ├── package.json              # Frontend dependencies and npm scripts
+│   └── vite.config.ts            # Vite proxy and build configuration
+├── tests/                        # Pytest backend test suite
+├── docker-compose.yml            # PostgreSQL 16 & Redis 7 container services
+├── pyproject.toml                # Python package metadata and dependencies
+└── README.md                     # Project documentation
+```
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

@@ -1,7 +1,7 @@
 import type { AcademicTerm } from "@/lib/api/types";
 
 export function formatDate(value: string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleString("en-PK", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -9,14 +9,14 @@ export function formatDate(value: string | null | undefined) {
 }
 
 export function formatShortDate(value: string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleDateString("en-PK", {
     dateStyle: "medium",
   });
 }
 
 export function fullName(firstName?: string | null, lastName?: string | null) {
-  return [firstName, lastName].filter(Boolean).join(" ") || "—";
+  return [firstName, lastName].filter(Boolean).join(" ") || "-";
 }
 
 export function formatTerm(term: AcademicTerm) {
@@ -37,9 +37,9 @@ const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
 /** Human-friendly relative time, e.g. "3 hours ago" or "in 2 days". */
 export function relativeTime(value: string | null | undefined) {
-  if (!value) return "—";
+  if (!value) return "-";
   const then = new Date(value).getTime();
-  if (Number.isNaN(then)) return "—";
+  if (Number.isNaN(then)) return "-";
   let diff = (then - Date.now()) / 1000; // seconds, signed
   const isPast = diff < 0;
   diff = Math.abs(diff);

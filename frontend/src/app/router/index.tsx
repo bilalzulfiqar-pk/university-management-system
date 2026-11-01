@@ -8,7 +8,7 @@ import { AuthLayout } from "@/app/layouts/auth-layout";
 import { LoadingScreen } from "@/components/feedback/loading-screen";
 import { NotFoundPage } from "@/pages/not-found-page";
 
-// Lazy-loaded route pages — keeps the initial bundle small and improves
+// Lazy-loaded route pages - keeps the initial bundle small and improves
 // first-paint on login. Each page is split into its own chunk.
 const LoginPage = lazy(() =>
   import("@/features/auth/pages/login-page").then((m) => ({ default: m.LoginPage })),
