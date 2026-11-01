@@ -26,7 +26,7 @@ const schema = z.object({
 type LoginValues = z.infer<typeof schema>;
 
 const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? "admin@example.com";
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? "ChangeMe123!!";
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? "ChangeMe123!";
 
 export function LoginPage() {
   const navigate = useNavigate();

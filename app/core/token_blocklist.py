@@ -17,7 +17,7 @@ class AccessTokenBlocklist:
         ttl = max(int((expires_at - datetime.now(timezone.utc)).total_seconds()), 1)
         if redis_client is not None:
             try:
-                redis_client.setex(f"{self._prefix}:{jti}", ttl, "1")
+                redis_client.set(f"{self._prefix}:{jti}", "1", ex=ttl)
                 return
             except RedisError:
                 pass

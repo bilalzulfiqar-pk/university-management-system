@@ -60,7 +60,7 @@ The frontend uses the built-in Vite proxy in local dev, so `VITE_API_BASE_URL` c
 VITE_API_BASE_URL=http://127.0.0.1:8000
 VITE_CSRF_COOKIE_NAME=ums_csrf
 VITE_DEMO_EMAIL=admin@example.com
-VITE_DEMO_PASSWORD=ChangeMe123!!
+VITE_DEMO_PASSWORD=ChangeMe123!
 ```
 
 | Variable | Purpose |
